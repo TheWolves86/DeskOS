@@ -5,3 +5,4 @@ area = width * height
 
 text = 'Hi my name is \'s'
 
+#
