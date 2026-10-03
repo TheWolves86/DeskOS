@@ -37,3 +37,63 @@ def update_task(task_id,task_name, description, priority, due_date, category):
     con.commit()
     con.close()
 
+def delete_task(task_id):
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    con.commit()
+    con.close()
+
+def complete_task(task_id):
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("UPDATE tasks SET completed = 1 WHERE id = ?", (task_id,))
+    con.commit()
+    con.close()
+
+def uncomplete_task(task_id):
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("UPDATE tasks SET completed = 0 WHERE id = ?", (task_id,))
+    con.commit()
+    con.close()
+
+def get_task_by_id(task_id):
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    task = cur.fetchone()
+    con.close()
+    return task
+
+def get_task_by_name(task_name):
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE task_name = ?", (task_name,))
+    task = cur.fetchone()
+    con.close()
+    return task
+
+def get_tasks_by_category(category):
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE category = ?", (category,))
+    tasks = cur.fetchall()
+    con.close()
+    return tasks
+
+def get_tasks_by_completed():
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE completed = ?", (1,))
+    tasks = cur.fetchall()
+    con.close()
+    return tasks
+
+def get_tasks_by_uncompleted():
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE completed = ?", (0,))
+    tasks = cur.fetchall()
+    con.close()
+    return tasks
