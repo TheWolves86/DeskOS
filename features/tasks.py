@@ -97,3 +97,20 @@ def get_tasks_by_uncompleted():
     tasks = cur.fetchall()
     con.close()
     return tasks
+
+def get_today_tasks():
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE due_date = date('now')")
+    tasks = cur.fetchall()
+    con.close()
+    return tasks
+
+def get_overdue_tasks():
+    con = get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM tasks WHERE due_date < date('now') AND completed = 0")
+    tasks = cur.fetchall()
+    con.close()
+    return tasks
+
