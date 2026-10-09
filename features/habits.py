@@ -5,6 +5,7 @@ from datetime import date, timedelta
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from db import get_connection
 
+#Adds the habit
 def add_habit(habit_name, description, category, created_at, active=1):
     con = get_connection()
     cur = con.cursor()
@@ -12,6 +13,7 @@ def add_habit(habit_name, description, category, created_at, active=1):
     con.commit()
     con.close()
 
+#Get all the habits
 def get_habits():
     con = get_connection()
     cur = con.cursor()
@@ -20,6 +22,7 @@ def get_habits():
     con.close()
     return habits
 
+#Updates the habit
 def update_habit(habit_id, habit_name, description, category, active):
     con = get_connection()
     cur = con.cursor()
@@ -27,6 +30,7 @@ def update_habit(habit_id, habit_name, description, category, active):
     con.commit()
     con.close()
 
+#Deletes a habit
 def delete_habit(habit_id):
     con = get_connection()
     cur = con.cursor()
@@ -34,6 +38,7 @@ def delete_habit(habit_id):
     con.commit()
     con.close()
 
+#Logs a habit completion
 def log_habit(habit_id, date, completed):
     con = get_connection()
     cur = con.cursor()
@@ -41,6 +46,7 @@ def log_habit(habit_id, date, completed):
     con.commit()
     con.close()
 
+#Marks that a habit is done today
 def mark_habit_done_today(habit_id):
     con = get_connection()
     cur = con.cursor()
@@ -53,6 +59,7 @@ def mark_habit_done_today(habit_id):
     con.commit()
     con.close()
 
+#Checks if a habit is done today
 def is_habit_done_today(habit_id):
     con = get_connection()
     cur = con.cursor()
@@ -64,7 +71,8 @@ def is_habit_done_today(habit_id):
     else:
         con.close()
         return False
-    
+
+#Marks that a habit is not done today
 def mark_habit_undone_today(habit_id):
     con = get_connection()
     cur = con.cursor()
@@ -77,6 +85,7 @@ def mark_habit_undone_today(habit_id):
     else:
         con.close()
 
+#Gets the history of habits
 def get_habit_history(habit_id):
     con = get_connection()
     cur = con.cursor()
@@ -85,6 +94,7 @@ def get_habit_history(habit_id):
     con.close()
     return logs
 
+#Gets the streak of a habit
 def get_habit_streak(habit_id):
     history = get_habit_history(habit_id)
     completed_dates = set()

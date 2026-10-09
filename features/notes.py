@@ -5,6 +5,7 @@ from datetime import date, timedelta
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from db import get_connection
 
+#It is for adding a note
 def add_note(title, content, category, created_at):
     con = get_connection()
     cur = con.cursor()
@@ -12,6 +13,7 @@ def add_note(title, content, category, created_at):
     con.commit()
     con.close()
 
+#it gets all the notes
 def get_notes():
     con = get_connection()
     cur = con.cursor()
@@ -20,6 +22,7 @@ def get_notes():
     con.close()
     return notes
 
+#it updates the notes
 def update_note(id, title, content, category):
     con = get_connection()
     cur = con.cursor()
@@ -27,6 +30,7 @@ def update_note(id, title, content, category):
     con.commit()
     con.close()
 
+#It deletes the note
 def delete_note(id):
     con = get_connection()
     cur = con.cursor()
@@ -34,6 +38,7 @@ def delete_note(id):
     con.commit()
     con.close()
 
+#It gets the notes by cateogry
 def get_notes_by_category(category):
     con = get_connection()
     cur = con.cursor()
@@ -42,6 +47,7 @@ def get_notes_by_category(category):
     con.close()
     return notes
 
+#Ut gets the notes by date range
 def get_notes_by_date_range(start_date, end_date):
     con = get_connection()
     cur = con.cursor()
@@ -50,6 +56,7 @@ def get_notes_by_date_range(start_date, end_date):
     con.close()
     return notes
 
+#Iit searches the notes
 def search_notes(query):
     con = get_connection()
     cur = con.cursor()
