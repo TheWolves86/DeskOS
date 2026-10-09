@@ -17,5 +17,7 @@ cur.execute("CREATE TABLE IF NOT EXISTS habit_logs(id INTEGER PRIMARY KEY AUTOIN
 cur.execute("CREATE TABLE IF NOT EXISTS transactions(id INTEGER PRIMARY KEY AUTOINCREMENT,amount REAL, description TEXT, type TEXT, category TEXT, date TEXT)")
 #creates the notes table
 cur.execute("CREATE TABLE IF NOT EXISTS notes(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT, category TEXT, created_at TEXT)")
+#creates the journal table
+cur.execute("CREATE TABLE IF NOT EXISTS journal(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT, date TEXT, created_at TEXT)")
 con.commit()
 con.close()

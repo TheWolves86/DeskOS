@@ -56,7 +56,7 @@ def get_notes_by_date_range(start_date, end_date):
     con.close()
     return notes
 
-#Iit searches the notes
+#It searches the notes
 def search_notes(query):
     con = get_connection()
     cur = con.cursor()
