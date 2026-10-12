@@ -7,13 +7,13 @@ if str(ROOT) not in sys.path:
 
 from db import get_connection
 
-
+#It normalizez the query
 def _normalize_query(query):
     if query is None:
         return ""
     return str(query).strip()
 
-
+#Its a template so we dont have to write too many times
 def _search_table(table_name, columns, query):
     keyword = _normalize_query(query)
     if not keyword:
@@ -30,26 +30,27 @@ def _search_table(table_name, columns, query):
     finally:
         con.close()
 
-
+#it searches the task
 def search_tasks(query):
     return _search_table("tasks", ("task_name", "description", "category", "priority"), query)
 
-
+#it searches the journal
 def search_journal(query):
     return _search_table("journal", ("title", "content", "date", "created_at"), query)
 
-
+#it searches the habits
 def search_habits(query):
     return _search_table("habits", ("habit_name", "description", "category"), query)
 
-
+#it search the notes
 def search_notes(query):
     return _search_table("notes", ("title", "content", "category"), query)
 
-
+#it searches the finances
 def search_finances(query):
     return _search_table("transactions", ("description", "category", "type"), query)
 
+#this does the main global search
 def global_search(query):
     results = []
 
@@ -65,4 +66,3 @@ def global_search(query):
         results.append(("finance", row))
 
     return results
-
