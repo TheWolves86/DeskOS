@@ -19,6 +19,7 @@ def get_task_summary():
     con = get_connection()
     try:
         cur = con.cursor()
+        today = get_today()
         cur.execute(
             """
             SELECT
@@ -68,10 +69,11 @@ def get_habit_summary():
             (today,)
         )
         completed_today = cur.fetchone()[0]
+        remaining = max(0, active_habits - completed_today)
         return {
             "active": active_habits,
             "completed_today": completed_today,
-            "remaining": active_habits - completed_today
+            "remaining": remaining
         }
     finally:
         con.close()
@@ -131,5 +133,69 @@ def get_finance_summary():
     finally:
         con.close()
 
-def get_upcoming_tasks():
+def get_upcoming_tasks(days=7):
     con = get_connection()
+    try:
+        cur = con.cursor()
+        today = date.today()
+        end_date = (today + timedelta(days=days)).isoformat()
+        cur.execute(
+            """
+            SELECT *
+            FROM tasks
+            WHERE completed = 0
+                AND due_date >= ?
+                AND due_date <= ?
+            ORDER BY due_date ASC
+            LIMIT 10
+            """,
+            (today.isoformat(), end_date)
+        )
+
+        return cur.fetchall()
+    finally:
+        con.close()
+
+def get_recent_notes(limit=5):
+    con = get_connection()
+    try:
+        cur = con.cursor()
+        cur.execute(
+            """
+            SELECT *
+            FROM notes
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+            """,
+            (limit,)
+        )
+
+        return cur.fetchall()
+
+    finally:
+        con.close()
+
+def get_content_summary():
+    con = get_connection()
+    try:
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM notes")
+        total_notes = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM journal")
+        total_journal = cur.fetchone()[0]
+        return {
+            "total_notes": total_notes,
+            "total_journal": total_journal
+        }
+    finally:
+        con.close()
+
+def get_dashboard_summary():
+    return {
+        "tasks": get_task_summary(),
+        "habits": get_habit_summary(),
+        "finance": get_finance_summary(),
+        "content": get_content_summary(),
+        "upcoming_tasks": get_upcoming_tasks(days=7),
+        "recent_notes": get_recent_notes(limit=5),
+    }
