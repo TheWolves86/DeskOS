@@ -59,3 +59,32 @@ def normalize_text(value):
         return ""
     return " ".join(str(value).split())
 
+def get_task_status(due_date, completed=0):
+    """Determine a task's status from its completionand due date."""
+    if completed:
+        return "Completed"
+    if not due_date:
+        return "No due date"
+    if not is_valid_iso_date(due_date):
+        return "Invalid date"
+    task_date = date.fromisoformat(due_date)
+    today = date.today()
+
+    if task_date < today:
+        return "Overdue"
+    elif task_date == today:
+        return "Due today"
+    else:
+        return "Upcoming"
+
+def is_task_overdue(due_date, completed=0):
+    """Return True if an unfinished task is overdue."""
+    return get_task_status(due_date, completed) == "Overdue"
+
+def get_days_until_due(due_date):
+    """Return days until the due date, or None for an invalid date."""
+    if not is_valid_iso_date(due_date):
+        return None
+
+    task_date = date.fromisoformat(due_date)
+    return (task_date - date.today()).days
