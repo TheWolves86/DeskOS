@@ -5,6 +5,7 @@ from datetime import date, timedelta
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from db import get_connection
 
+#It adds a transaction
 def add_transaction(amount, description, type, category, date):
     con = get_connection()
     cur = con.cursor()
@@ -12,6 +13,7 @@ def add_transaction(amount, description, type, category, date):
     con.commit()
     con.close()
 
+#It gets all the transactions
 def get_transactions():
     con = get_connection()
     cur = con.cursor()
@@ -20,6 +22,7 @@ def get_transactions():
     con.close()
     return transactions
 
+#It updates a transaction
 def update_transaction(id, amount, description, type, category, date):
     con = get_connection()
     cur = con.cursor()
@@ -27,6 +30,7 @@ def update_transaction(id, amount, description, type, category, date):
     con.commit()
     con.close()
 
+#It deletes a transaction
 def delete_transaction(id):
     con = get_connection()
     cur = con.cursor()
@@ -34,6 +38,7 @@ def delete_transaction(id):
     con.commit()
     con.close()
 
+#it gets all the transaction by type
 def get_transactions_by_type(type):
     con = get_connection()
     cur = con.cursor()
@@ -42,6 +47,7 @@ def get_transactions_by_type(type):
     con.close()
     return transactions
 
+#it gets the balance
 def get_balance():
     con = get_connection()
     cur = con.cursor()
@@ -57,6 +63,7 @@ def get_balance():
     con.close()
     return balance
 
+#it gets transaction by category
 def get_transactions_by_category(category):
     con = get_connection()
     cur = con.cursor()
@@ -65,6 +72,7 @@ def get_transactions_by_category(category):
     con.close()
     return transactions
 
+#It gets transaction by date
 def get_transactions_by_date(date):
     con = get_connection()
     cur = con.cursor()
@@ -73,6 +81,7 @@ def get_transactions_by_date(date):
     con.close()
     return transactions
 
+#it gets transaction from one date to another
 def get_transactions_between_dates(start_date, end_date):
     con = get_connection()
     cur = con.cursor()

@@ -1,5 +1,6 @@
 from datetime import date
 
+#It validates the text
 def validate_required_text(value, field_name="value"):
     """Ensure a required text field isn't empty."""
     if value is None or value == "":
@@ -11,6 +12,7 @@ def validate_required_text(value, field_name="value"):
 
     return cleaned_value
 
+#It validates the date
 def validate_iso_date(value):
     """Validate a date written in YYYY-MM-DD format"""
     if not isinstance(value, str):
@@ -26,6 +28,7 @@ def validate_iso_date(value):
 
     return value
 
+#It validates the priority column
 def validate_priority(value):
     """Accept only low,medium or high priority."""
     if not isinstance(value, str):
@@ -38,6 +41,7 @@ def validate_priority(value):
 
     return priority
 
+#it validates a transaction type
 def validate_transaction_type(value):
     """Accept only income or expense transactions"""
     if not isinstance(value, str):
@@ -47,6 +51,7 @@ def validate_transaction_type(value):
         raise ValueError("Type must be income or expense.")
     return transaction_type
 
+#It validates a amount
 def validate_amount(value):
     """Ensure an amount is numeric,finite and greater than zero."""
     import math

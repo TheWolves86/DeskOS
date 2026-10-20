@@ -8,13 +8,15 @@ if str(ROOT) not in sys.path:
 
 from db import get_connection
 
-
+#it gets today
 def get_today():
     return date.today().isoformat()
 
+#it gets current month
 def current_month():
     return date.today().replace(day=1).isoformat()
 
+#it gets the task summary
 def get_task_summary():
     con = get_connection()
     try:
@@ -50,6 +52,7 @@ def get_task_summary():
     finally:
         con.close()
 
+#it gets the summary of habits
 def get_habit_summary():
     con = get_connection()
     try:
@@ -78,7 +81,7 @@ def get_habit_summary():
     finally:
         con.close()
 
-    
+#it gets the summary of finances
 def get_finance_summary():
     con = get_connection()
     try:
@@ -133,6 +136,7 @@ def get_finance_summary():
     finally:
         con.close()
 
+#It gets the upcoming tasks
 def get_upcoming_tasks(days=7):
     con = get_connection()
     try:
@@ -156,6 +160,7 @@ def get_upcoming_tasks(days=7):
     finally:
         con.close()
 
+#it gets the recent notes
 def get_recent_notes(limit=5):
     con = get_connection()
     try:
@@ -175,6 +180,7 @@ def get_recent_notes(limit=5):
     finally:
         con.close()
 
+#ut gets the summary of content
 def get_content_summary():
     con = get_connection()
     try:
@@ -190,6 +196,7 @@ def get_content_summary():
     finally:
         con.close()
 
+#It gets the summary of the dashboard
 def get_dashboard_summary():
     return {
         "tasks": get_task_summary(),
