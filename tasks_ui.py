@@ -108,3 +108,157 @@ class TasksScreen(ttk.Frame):
             state="readonly",
             width=12
         )
+        filters.pack(side="left", padx=8)
+
+        filters.bind(
+            "<<ComboboxSelected>>",
+            lambda event: self.refresh_tasks()
+        )
+
+        add_button = tk.Button(
+            toolbar,
+            text="+ Add Task",
+            command=self.open_task_form(),
+            bg=TEAL,
+            fg=WHITE,
+            activebackground=TEAL_LIGHT,
+            activeforeground=WHITE,
+            relief="flat",
+            padx=14,
+            pady=8,
+            cursor="hand2"
+        )
+        add_button.pack(fill="both", expand=True)
+
+    def build_task_table(self):
+        table_frame = ttk.Frame(
+            self,
+            style="Tasks.TFrame",
+            padding=(25,5,25,10)
+        )
+        table_frame.pack(fill="both", expand=True)
+
+        columns=(
+            "id",
+            "task",
+            "priority",
+            "due_date",
+            "category",
+            "status"
+        )
+
+        self.table = ttk.Treeview(
+            table_frame,
+            columns=columns,
+            show="headings",
+            style="Tasks.Treeview",
+            selectmode="browse"
+        )
+
+        self.table.heading("id", text="ID")
+        self.table.heading("task", text="Task")
+        self.table.heading("priority", text="Priority")
+        self.table.heading("due_date", text="Due Date")
+        self.table.heading("category", text="Category")
+        self.table.heading("status", text="Status")
+
+        self.table.column("id", width=40, anchor="center")
+        self.table.column("task", width=220)
+        self.table.column("priority", width=85, anchor="center")
+        self.table.column("due_date", width=105, anchor="center")
+        self.table.column("category", width=100)
+        self.table.column("status", width=100, anchor="center")
+
+        scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="vertical",
+            command=self.table.yview
+        )
+
+        self.table.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        self.table.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        self.table.bind(
+            "<Double-1>",
+            lambda event: self.edit_selected_task()
+        )
+
+    def build_bottom_bar(self):
+        bottom = ttk.Frame(
+            self,
+            style="Tasks.TFrame",
+            padding=(25, 10, 25, 20)
+        )
+        bottom.pack(fill="x")
+
+        ttk.Button(
+            bottom,
+            text="Mark Complete",
+            command=self.complete_selected_task
+        ).pack(side="left", padx=(0, 8))
+
+        ttk.Button(
+            bottom,
+            text="Edit",
+            command=self.edit_selected_task
+        ).pack(side="left", padx=8)
+
+        ttk.Button(
+            bottom,
+            text="Delete",
+            command=self.delete_selected_task
+        ).pack(side="left", padx=8)
+
+        self.count_label = ttk.Label(
+            bottom,
+            text="0 tasks",
+            style="Tasks.TLabel"
+        )
+        self.count_label.pack(side="right")
+
+    def refresh_tasks(self):
+        for item in self.table.get_children():
+            self.table.delete(item)
+
+        try:
+            tasks = task_backend.get_tasks()
+        except Exception as error:
+            messagebox.showerror(
+                "Database Error",
+                 f"Could not load tasks:\n{error}"
+            )
+            return
+
+        search_text = self.search_var.get().strip().lower()
+        selected_filter = self.filter_var.get()
+        today = date.today().isoformat()
+        visible_count = 0
+
+        for task in tasks:
+            task_id, name, description, priority, due_date, category, completed = task
+
+            searchable_text = (
+                f"{name} {description} {category} {priority}"
+            ).lower()
+
+            if search_text and search_text not in searchable_text:
+                continue
+
+            if selected_filter == "Completed" and not completed:
+                continue
+
+            if selected_filter == "Today":
+                if due_date != today or completed:
+                    continue
+
+            if selected_filter == "Upcoming":
+                if not due_date or due_date <= today or completed:
+                    continue
+
+            status = "Completed" if completed else "Pending"
+            
+
