@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tasks_ui import TasksScreen
 
 root = tk.Tk()
 root.title("DeskOS")
@@ -42,14 +43,18 @@ def show_page(page_name):
     for widget in content.winfo_children():
         widget.destroy()
 
-    heading = tk.Label(
-        content,
-        text=page_name,
-        bg="#F5F4EF",
-        fg="#173C3A",
-        font=("Segoe UI", 24, "bold"),
-    )
-    heading.pack(anchor="w", padx=30, pady=30)
+    if page_name == "Tasks":
+        screen = TasksScreen(content)
+        screen.pack(fill="both", expand=True)
+    else:
+        heading = tk.Label(
+            content,
+            text=page_name,
+            bg="#F5F4EF",
+            fg="#173C3A",
+            font=("Segoe UI", 24, "bold")
+        )
+        heading.pack(anchor="w", padx=30, pady=30)
 
 for page in pages:
     button = tk.Button(

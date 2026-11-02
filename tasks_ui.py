@@ -260,5 +260,242 @@ class TasksScreen(ttk.Frame):
                     continue
 
             status = "Completed" if completed else "Pending"
-            
+            displayed_date = due_date if due_date else "Not Set"
+
+            self.table.insert(
+                "",
+                "end",
+                iid=str(task_id),
+                values=(
+                    task_id,
+                    name,
+                    priority,
+                    displayed_date,
+                    category,
+                    status
+                )
+            )
+
+
+            visible_count += 1
+
+        self.count_label.configure(
+            text=f"{visible_count} tasks"
+        )
+
+    def open_task_form(self, task=None):
+        editing = task is not None
+
+        window = tk.Toplevel(self)
+        window.title("Edit Task" if editing else "Add Task")
+        window.geometry("420x460")
+        window.resizable(False, False)
+        window.configure(bg=BG)
+        window.transient(self.winfo_toplevel())
+        window.grab_set()
+
+        tk.Label(
+            window,
+            text="Edit Task" if editing else "Add New Task",
+            bg=BG,
+            fg=TEXT,
+            font=("Segoe UI", 20, "bold")
+        ).pack(anchor="w", padx=25, pady=(22, 15))
+
+        form = tk.Frame(window, bg=BG)
+        form.pack(fill="both", expand=True, padx=25)
+
+        def add_field(label_text, default=""):
+            tk.Label(
+                form,
+                text=label_text,
+                bg=BG,
+                fg=TEXT,
+                font=("Segoe UI", 10)
+            ).pack(anchor="w", pady=(7, 3))
+
+            entry =ttk.Entry(form)
+            entry.pack(fill="x")
+            entry.insert(0, default)
+            return entry
+
+        name_entry = add_field(
+            "Task name *",
+            task[1] if editing else ""
+        )
+
+        description_entry = add_field(
+            "Description",
+            task[2] if editing else ""
+        )
+
+        tk.Label(
+            form,
+            text="Priority",
+            bg=BG,
+            fg=TEXT
+        ).pack(anchor="w", pady=(7, 3))
+
+        priority_var = tk.StringVar(
+            value=task[3] if editing else "Medium"
+        )
+
+        ttk.Combobox(
+            form,
+            textvariable=priority_var,
+            values=["Low", "Medium", "High"],
+            state="readonly"
+        ).pack(fill="x")
+
+        due_entry = add_field(
+            "Due date (YYYY-MM-DD, optional)",
+            task[4] or "" if editing else ""
+        )
+
+        category_entry = add_field(
+            "Category",
+            task[5] or "" if editing else "Personal"
+        )
+
+        def save_task():
+            name = name_entry.get().strip()
+            description = description_entry.get().strip()
+            priority = priority_var.get()
+            due_date = due_entry.get().strip()
+            category = category_entry.get().strip()
+
+            if not name:
+                messagebox.showwarning(
+                    "Missing Information",
+                    "Please enter a task name.",
+                    parent=window
+                )
+                return
+
+            if due_date:
+                try:
+                    parsed_date = date.fromisoformat(due_date)
+                    if parsed_date.isoformat() != due_date:
+                        raise ValueError
+                except ValueError:
+                    messagebox.showwarning(
+                        "Invalid Date",
+                        "Use the YYYY-MM-DD format.",
+                        parent=window
+                    )
+                    return
+
+                try:
+                    if editing:
+                        task_backend.update_task(
+                            task[0],
+                            name,
+                            description,
+                            priority,
+                            due_date,
+                            category
+                        )
+                    else:
+                        task_backend.add_task(
+                            name,
+                            description,
+                            priority,
+                            due_date,
+                            category
+                        )
+
+                    window.destroy()
+                    self.refresh_tasks()
+
+                except Exception as error:
+                    messagebox.showerror(
+                        "Could Not Save",
+                        str(error),
+                        parent=window
+                    )
+
+            tk.Button(
+                window,
+                text="Save Task",
+                command=save_task,
+                bg=TEAL,
+                fg=WHITE,
+                relief="flat",
+                padx=18,
+                pady=9,
+                cursor="hand2"
+            ).pack(anchor="e", padx=25, pady=20)
+
+        def get_selected_task(self):
+            selected = self.table.selection()
+
+            if not selected:
+                messagebox.showinfo(
+                    "Select a Task",
+                    "Please select a task first."
+                )
+                return None
+
+            task_id = int(selected[0])
+
+            for task in task_backend.get_tasks():
+                if task[0] == task_id:
+                    return task
+
+            messagebox.showerror(
+                "Task Not Found",
+                "This task could not be found in the database."
+            )
+            return None
+
+        def edit_selected_task(self):
+            task = self.get_selected_task()
+
+            if task is not None:
+                self.open_task_form(task)
+
+        def complete_selected_task(self):
+            task = self.get_selected_task()
+
+            if task is None:
+                return
+
+            if task[6]:
+                messagebox.showinfo(
+                    "Task Already Completed",
+                    "This task is already marked as completed."
+                )
+                return
+
+            try:
+                task_backend.complete_task(task[0])
+                self.refresh_tasks()
+            except Exception as error:
+                messagebox.showerror(
+                    "Could Not Complete Task",
+                    str(error)
+                )
+
+        def delete_selected_task(self):
+            task = self.get_selected_task()
+
+        if task is None:
+            return
+
+        confirm = messagebox.askyesno(
+            "Delete Task",
+            f"Delete '{task[1]}'?\nThis cannot be undone."
+        )
+
+        if not confirm:
+            return
+
+        try:
+            task_backend.delete_task(task[0])
+            self.refresh_tasks()
+        except Exception as error:
+            messagebox.showerror(
+                "Could Not Delete Task",
+                str(error)
+            )
 
