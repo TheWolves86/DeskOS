@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tasks_ui import TasksScreen
+from habits_ui import HabitsScreen
 
 root = tk.Tk()
 root.title("DeskOS")
@@ -46,6 +47,11 @@ def show_page(page_name):
     if page_name == "Tasks":
         screen = TasksScreen(content)
         screen.pack(fill="both", expand=True)
+
+    elif page_name == "Habits":
+        screen = HabitsScreen(content)
+        screen.pack(fill="both", expand=True)
+
     else:
         heading = tk.Label(
             content,
