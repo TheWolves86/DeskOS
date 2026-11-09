@@ -6,10 +6,7 @@ from datetime import date
 from features import habits as habit_backend
 
 
-# ==========================================
-# DESKOS COLOURS
-# ==========================================
-
+#DeskOs Colorsss
 BG = "#F5F4EF"
 TEAL = "#075753"
 TEAL_LIGHT = "#167E75"
@@ -17,21 +14,14 @@ TEXT = "#173C3A"
 MUTED = "#71807A"
 WHITE = "#FFFFFF"
 
-
-# ==========================================
-# HABITS SCREEN
-# ==========================================
-
+#Code of the habit's screen
 class HabitsScreen(ttk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent)
-
         self.parent = parent
-
         self.search_var = tk.StringVar()
         self.filter_var = tk.StringVar(value="Active")
-
         self.setup_styles()
 
         self.build_header()
@@ -42,10 +32,7 @@ class HabitsScreen(ttk.Frame):
 
         self.refresh_habits()
 
-    # ======================================
-    # STYLES
-    # ======================================
-
+    #Styles
     def setup_styles(self):
 
         style = ttk.Style()
@@ -82,10 +69,7 @@ class HabitsScreen(ttk.Frame):
             font=("Segoe UI", 10, "bold")
         )
 
-    # ======================================
-    # HEADER
-    # ======================================
-
+    #Header
     def build_header(self):
 
         header = ttk.Frame(
@@ -112,10 +96,7 @@ class HabitsScreen(ttk.Frame):
 
         subtitle.pack(anchor="w", pady=(4, 0))
 
-    # ======================================
-    # SUMMARY
-    # ======================================
-
+    #Summary
     def build_summary(self):
 
         summary = ttk.Frame(
@@ -142,10 +123,7 @@ class HabitsScreen(ttk.Frame):
 
         self.completed_label.pack(side="right")
 
-    # ======================================
-    # TOOLBAR
-    # ======================================
-
+    #Toolbar
     def build_toolbar(self):
 
         toolbar = ttk.Frame(
@@ -156,8 +134,7 @@ class HabitsScreen(ttk.Frame):
 
         toolbar.pack(fill="x")
 
-        # Search
-
+        #Search
         self.search_entry = ttk.Entry(
             toolbar,
             textvariable=self.search_var
@@ -174,8 +151,7 @@ class HabitsScreen(ttk.Frame):
             lambda event: self.refresh_habits()
         )
 
-        # Filters
-
+        #Filters
         filters = ttk.Combobox(
             toolbar,
             textvariable=self.filter_var,
@@ -191,8 +167,7 @@ class HabitsScreen(ttk.Frame):
             lambda event: self.refresh_habits()
         )
 
-        # Add habit button
-
+        #Add Habit button
         add_button = tk.Button(
             toolbar,
             text="+ Add Habit",
@@ -211,10 +186,7 @@ class HabitsScreen(ttk.Frame):
 
         add_button.pack(side="right")
 
-    # ======================================
-    # HABIT TABLE
-    # ======================================
-
+    #the excel type table which shows habit
     def build_habit_table(self):
 
         table_frame = ttk.Frame(
@@ -304,10 +276,7 @@ class HabitsScreen(ttk.Frame):
             lambda event: self.edit_selected_habit()
         )
 
-    # ======================================
-    # BOTTOM BUTTONS
-    # ======================================
-
+    #The buttons in the bottom which will perform crud tasks
     def build_bottom_bar(self):
 
         bottom = ttk.Frame(
@@ -356,10 +325,7 @@ class HabitsScreen(ttk.Frame):
 
         self.count_label.pack(side="right")
 
-    # ======================================
-    # REFRESH HABITS
-    # ======================================
-
+    #Refreshes Habits after adding or editing or doing anything to habit
     def refresh_habits(self):
 
         for item in self.table.get_children():
@@ -395,16 +361,14 @@ class HabitsScreen(ttk.Frame):
                 active
             ) = habit
 
-            # Count active habits
-
+            #Counts active habits
             if active:
                 active_count += 1
 
                 if habit_backend.is_habit_done_today(habit_id):
                     completed_count += 1
 
-            # Apply search
-
+            #Applies search
             searchable_text = (
                 f"{name or ''} "
                 f"{description or ''} "
@@ -414,26 +378,22 @@ class HabitsScreen(ttk.Frame):
             if search_text and search_text not in searchable_text:
                 continue
 
-            # Apply active/archive filter
-
+            #Applies active/archive filter
             if selected_filter == "Active" and not active:
                 continue
 
             if selected_filter == "Archived" and active:
                 continue
 
-            # Today's completion status
-
+            #Todays completion status
             is_done = habit_backend.is_habit_done_today(habit_id)
 
             status = "Done" if is_done else "Not Done"
 
-            # Calculate streak
-
+            #Calculates the streak
             streak = habit_backend.get_habit_streak(habit_id)
 
-            # Insert into table
-
+            #Insert into table
             self.table.insert(
                 "",
                 "end",
@@ -449,8 +409,7 @@ class HabitsScreen(ttk.Frame):
 
             visible_count += 1
 
-        # Update summary
-
+        #Updates the summary
         self.active_label.configure(
             text=f"Active Habits: {active_count}"
         )
@@ -463,10 +422,7 @@ class HabitsScreen(ttk.Frame):
             text=f"{visible_count} habits"
         )
 
-    # ======================================
-    # ADD / EDIT HABIT FORM
-    # ======================================
-
+    #Add/Edit the habit form
     def open_habit_form(self, habit=None):
 
         editing = habit is not None
@@ -483,8 +439,7 @@ class HabitsScreen(ttk.Frame):
 
         window.transient(self.winfo_toplevel())
 
-        # Heading
-
+        #Heading
         tk.Label(
             window,
             text="Edit Habit" if editing else "Add New Habit",
@@ -508,8 +463,7 @@ class HabitsScreen(ttk.Frame):
             padx=25
         )
 
-        # Reusable field creator
-
+        #Reusable field creator
         def add_field(label_text, default=""):
 
             tk.Label(
@@ -531,29 +485,25 @@ class HabitsScreen(ttk.Frame):
 
             return entry
 
-        # Habit name
-
+        #Habit name
         name_entry = add_field(
             "Habit name *",
             habit[1] if editing else ""
         )
 
-        # Description
-
+        #Description
         description_entry = add_field(
             "Description",
             (habit[2] or "") if editing else ""
         )
 
-        # Category
-
+        #Category
         category_entry = add_field(
             "Category",
             (habit[3] or "") if editing else "Personal"
         )
 
-        # Active status
-
+        #Active status
         active_var = tk.IntVar(
             value=habit[5] if editing else 1
         )
@@ -571,10 +521,7 @@ class HabitsScreen(ttk.Frame):
             pady=12
         )
 
-        # ==================================
-        # SAVE HABIT
-        # ==================================
-
+        #Saves the Habit
         def save_habit():
 
             name = name_entry.get().strip()
@@ -629,8 +576,7 @@ class HabitsScreen(ttk.Frame):
                     parent=window
                 )
 
-        # Save button
-
+        #Saves button
         tk.Button(
             window,
             text="Save Habit",
@@ -649,8 +595,7 @@ class HabitsScreen(ttk.Frame):
             pady=15
         )
 
-        # Center the form
-
+        #Center the form
         window.update_idletasks()
 
         parent_window = self.winfo_toplevel()
@@ -675,10 +620,7 @@ class HabitsScreen(ttk.Frame):
 
         name_entry.focus_set()
 
-    # ======================================
-    # GET SELECTED HABIT
-    # ======================================
-
+    #Get Selected Habit
     def get_selected_habit(self):
 
         selected = self.table.selection()
@@ -717,10 +659,7 @@ class HabitsScreen(ttk.Frame):
 
             return None
 
-    # ======================================
-    # EDIT HABIT
-    # ======================================
-
+    #Edit Habit
     def edit_selected_habit(self):
 
         habit = self.get_selected_habit()
@@ -729,10 +668,7 @@ class HabitsScreen(ttk.Frame):
 
             self.open_habit_form(habit)
 
-    # ======================================
-    # MARK HABIT DONE
-    # ======================================
-
+    #Mark Habit Done
     def complete_selected_habit(self):
 
         habit = self.get_selected_habit()
@@ -762,10 +698,7 @@ class HabitsScreen(ttk.Frame):
                 str(error)
             )
 
-    # ======================================
-    # MARK HABIT UNDONE
-    # ======================================
-
+    #Mark Habit Undone
     def undo_selected_habit(self):
 
         habit = self.get_selected_habit()
@@ -786,10 +719,7 @@ class HabitsScreen(ttk.Frame):
                 str(error)
             )
 
-    # ======================================
-    # DELETE HABIT
-    # ======================================
-
+    #Delete a selected habit
     def delete_selected_habit(self):
 
         habit = self.get_selected_habit()
@@ -818,10 +748,7 @@ class HabitsScreen(ttk.Frame):
                 str(error)
             )
 
-    # ======================================
-    # HABIT HISTORY
-    # ======================================
-
+    #Habit History
     def show_history(self):
 
         habit = self.get_selected_habit()
@@ -879,8 +806,7 @@ class HabitsScreen(ttk.Frame):
             pady=(0, 20)
         )
 
-        # Sort newest dates first
-
+        #Sort newest dates first
         history = sorted(
             history,
             key=lambda log: log[0],
