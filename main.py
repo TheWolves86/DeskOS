@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tasks_ui import TasksScreen
 from habits_ui import HabitsScreen
+from finance_ui import FinanceScreen
 
 root = tk.Tk()
 root.title("DeskOS")
@@ -52,6 +53,10 @@ def show_page(page_name):
         screen = HabitsScreen(content)
         screen.pack(fill="both", expand=True)
 
+    elif page_name == "Finance":
+        screen = FinanceScreen(content)
+        screen.pack(fill="both", expand=True)
+
     else:
         heading = tk.Label(
             content,
@@ -61,6 +66,8 @@ def show_page(page_name):
             font=("Segoe UI", 24, "bold")
         )
         heading.pack(anchor="w", padx=30, pady=30)
+
+
 
 for page in pages:
     button = tk.Button(
@@ -84,3 +91,5 @@ for page in pages:
 show_page("Dashboard")
 
 root.mainloop()
+
+#

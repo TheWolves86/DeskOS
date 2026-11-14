@@ -23,7 +23,31 @@ class FinanceScreen(ttk.Frame):
 
         self.current_filter = "All"
         self.setup_styles()
+        self.canvas = tk.Canvas(
+            self,
+            bg=self.bg_color,
+            highlightthickness=0
+        )
+        self.scrollbar = ttk.Scrollbar(
+            self,
+            orient="vertical",
+            command=self.canvas.yview
+        )
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.page = ttk.Frame(self.canvas, style="Finance.TFrame")
+        self.page_window = self.canvas.create_window(
+            (0, 0),
+            window=self.page,
+            anchor="nw"
+        )
+        self.page.bind("<Configure>", self.update_scroll_region)
+        self.canvas.bind("<Configure>", self.resize_page)
+
         self.create_layout()
+        self.bind_mousewheel(self.page)
         self.refresh_data()
 
     #Styles
@@ -58,13 +82,41 @@ class FinanceScreen(ttk.Frame):
             foreground=[("selected", self.dark_text)]
         )
 
+    def update_scroll_region(self, event=None):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def resize_page(self, event):
+        self.canvas.itemconfigure(self.page_window, width=event.width)
+
+    def bind_mousewheel(self, widget):
+        if not isinstance(widget, (ttk.Combobox, ttk.Treeview)):
+            widget.bind("<MouseWheel>", self.on_mousewheel, add="+")
+            widget.bind("<Button-4>", self.on_mousewheel, add="+")
+            widget.bind("<Button-5>", self.on_mousewheel, add="+")
+
+        for child in widget.winfo_children():
+            self.bind_mousewheel(child)
+
+    def on_mousewheel(self, event):
+        if getattr(event, "num", None) == 4:
+            units = -1
+        elif getattr(event, "num", None) == 5:
+            units = 1
+        else:
+            units = -int(event.delta / 120)
+            if units == 0:
+                units = -1 if event.delta > 0 else 1
+
+        self.canvas.yview_scroll(units, "units")
+        return "break"
+
     #Main Layout
     def create_layout(self):
 
         self.configure(style="Finance.TFrame")
 
         #Main heading
-        header = tk.Frame(self, bg=self.bg_color)
+        header = tk.Frame(self.page, bg=self.bg_color)
         header.pack(fill="x", padx=30, pady=(25, 15))
 
         tk.Label(
@@ -84,58 +136,32 @@ class FinanceScreen(ttk.Frame):
         ).pack(anchor="w", pady=(4, 0))
 
         # Summary cards
-        self.create_summary_cards()
+        self.create_summary_cards(self.page)
 
         # Transaction section
-        self.create_transaction_section()
+        self.create_transaction_section(self.page)
 
     #Summary Cards
-    def create_summary_cards(self):
+    def create_summary_cards(self, parent):
 
-        cards_frame = tk.Frame(self, bg=self.bg_color)
+        cards_frame = tk.Frame(parent, bg=self.bg_color)
         cards_frame.pack(fill="x", padx=30, pady=10)
 
         cards_frame.columnconfigure(0, weight=1)
         cards_frame.columnconfigure(1, weight=1)
         cards_frame.columnconfigure(2, weight=1)
 
-        self.balance_label = tk.Label(
-            cards_frame,
-            text="₹0.00",
-            bg="white",
-            fg=self.dark_text,
-            font=("Segoe UI", 19, "bold")
+        self.balance_label = self.create_summary_card(
+            cards_frame, 0, "Total Balance", self.dark_text
+        )
+        self.income_label = self.create_summary_card(
+            cards_frame, 1, "Total Income", "#16845B"
+        )
+        self.expense_label = self.create_summary_card(
+            cards_frame, 2, "Total Expenses", "#C45B52"
         )
 
-        self.income_label = tk.Label(
-            cards_frame,
-            text="₹0.00",
-            bg="white",
-            fg="#16845B",
-            font=("Segoe UI", 19, "bold")
-        )
-
-        self.expense_label = tk.Label(
-            cards_frame,
-            text="₹0.00",
-            bg="white",
-            fg="#C45B52",
-            font=("Segoe UI", 19, "bold")
-        )
-
-        self.create_summary_card(
-            cards_frame, 0, "Total Balance", self.balance_label
-        )
-
-        self.create_summary_card(
-            cards_frame, 1, "Total Income", self.income_label
-        )
-
-        self.create_summary_card(
-            cards_frame, 2, "Total Expenses", self.expense_label
-        )
-
-    def create_summary_card(self, parent, column, title, value_label):
+    def create_summary_card(self, parent, column, title, value_color):
         card = tk.Frame(
             parent,
             bg="white",
@@ -159,12 +185,20 @@ class FinanceScreen(ttk.Frame):
             font=("Segoe UI", 10)
         ).pack(anchor="w", padx=16, pady=(14, 5))
 
+        value_label = tk.Label(
+            card,
+            text="₹0.00",
+            bg="white",
+            fg=value_color,
+            font=("Segoe UI", 19, "bold")
+        )
         value_label.pack(anchor="w", padx=16, pady=(0, 14))
+        return value_label
 
     #Transaction Section
-    def create_transaction_section(self):
+    def create_transaction_section(self, parent):
 
-        section = tk.Frame(self, bg=self.bg_color)
+        section = tk.Frame(parent, bg=self.bg_color)
         section.pack(
             fill="both",
             expand=True,
@@ -184,21 +218,65 @@ class FinanceScreen(ttk.Frame):
             font=("Segoe UI", 15, "bold")
         ).pack(side="left")
 
-        add_button = tk.Button(
-            top_bar,
-            text="+ Add Transaction",
-            command=self.open_add_form,
+        entry_form = tk.Frame(
+            section,
+            bg="white",
+            highlightbackground="#E5E9E6",
+            highlightthickness=1
+        )
+        entry_form.pack(fill="x", pady=(0, 12))
+
+        for column in range(3):
+            entry_form.columnconfigure(column, weight=1)
+
+        self.entry_amount_var = tk.StringVar()
+        self.entry_description_var = tk.StringVar()
+        self.entry_type_var = tk.StringVar(value="Expense")
+        self.entry_category_var = tk.StringVar()
+        self.entry_date_var = tk.StringVar(value=date.today().isoformat())
+
+        self.add_inline_field(
+            entry_form, "Amount (₹)", self.entry_amount_var, 12, 0, 0
+        )
+        self.add_inline_field(
+            entry_form, "Description", self.entry_description_var, 22, 0, 1
+        )
+        tk.Label(
+            entry_form,
+            text="Type",
+            bg="white",
+            fg=self.dark_text,
+            font=("Segoe UI", 9, "bold")
+        ).grid(row=0, column=2, sticky="w", padx=(8, 12), pady=(8, 2))
+        ttk.Combobox(
+            entry_form,
+            textvariable=self.entry_type_var,
+            values=["Income", "Expense"],
+            state="readonly",
+            width=12,
+            font=("Segoe UI", 10)
+        ).grid(row=1, column=2, sticky="ew", padx=(8, 12), pady=(0, 8))
+
+        self.add_inline_field(
+            entry_form, "Category", self.entry_category_var, 18, 1, 0
+        )
+        self.add_inline_field(
+            entry_form, "Date (YYYY-MM-DD)", self.entry_date_var, 14, 1, 1
+        )
+        tk.Button(
+            entry_form,
+            text="Save Transaction",
+            command=self.save_inline_transaction,
             bg=self.teal,
             fg="white",
             activebackground="#167E75",
             activeforeground="white",
             relief="flat",
-            font=("Segoe UI", 10, "bold"),
-            padx=14,
-            pady=8,
+            font=("Segoe UI", 9, "bold"),
+            padx=10,
+            pady=6,
             cursor="hand2"
-        )
-        add_button.pack(side="right")
+        ).grid(row=3, column=2, sticky="ew", padx=(8, 12), pady=(4, 8))
 
         # Search and filters
         toolbar = tk.Frame(section, bg=self.bg_color)
@@ -436,10 +514,51 @@ class FinanceScreen(ttk.Frame):
             )
 
 
-    #Add Transaction
-    def open_add_form(self):
+    def add_inline_field(self, parent, label, variable, width, row, column):
+        tk.Label(
+            parent,
+            text=label,
+            bg="white",
+            fg=self.dark_text,
+            font=("Segoe UI", 9, "bold")
+        ).grid(
+            row=row * 2,
+            column=column,
+            sticky="w",
+            padx=(8, 12),
+            pady=(8, 2)
+        )
+        ttk.Entry(
+            parent,
+            textvariable=variable,
+            width=width,
+            font=("Segoe UI", 10)
+        ).grid(
+            row=row * 2 + 1,
+            column=column,
+            sticky="ew",
+            padx=(8, 12),
+            pady=(0, 8)
+        )
 
-        self.open_transaction_form()
+    def save_inline_transaction(self):
+        values = self.validate_transaction(
+            self.entry_amount_var.get(),
+            self.entry_description_var.get(),
+            self.entry_type_var.get(),
+            self.entry_category_var.get(),
+            self.entry_date_var.get()
+        )
+        if values is None:
+            return
+
+        finance_backend.add_transaction(*values)
+        self.entry_amount_var.set("")
+        self.entry_description_var.set("")
+        self.entry_type_var.set("Expense")
+        self.entry_category_var.set("")
+        self.entry_date_var.set(date.today().isoformat())
+        self.refresh_data()
 
     #Edit Transaction
     def edit_transaction(self):
@@ -566,63 +685,15 @@ class FinanceScreen(ttk.Frame):
         # Save function
         def save_transaction():
 
-            amount_text = amount_var.get().strip()
-            description = description_var.get().strip()
-            transaction_type = type_var.get().strip().lower()
-            category = category_var.get().strip()
-            transaction_date = date_var.get().strip()
-
-            # Check amount
-            try:
-                amount = float(amount_text)
-
-                if amount <= 0:
-                    raise ValueError
-
-            except ValueError:
-                messagebox.showerror(
-                    "Invalid Amount",
-                    "Enter an amount greater than zero.",
-                    parent=window
-                )
-                return
-
-            # Check description
-            if not description:
-                messagebox.showerror(
-                    "Missing Description",
-                    "Please enter a description.",
-                    parent=window
-                )
-                return
-
-            # Check category
-            if not category:
-                messagebox.showerror(
-                    "Missing Category",
-                    "Please enter a category.",
-                    parent=window
-                )
-                return
-
-            # Check transaction type
-            if transaction_type not in ("income", "expense"):
-                messagebox.showerror(
-                    "Invalid Type",
-                    "Choose Income or Expense.",
-                    parent=window
-                )
-                return
-
-            # Check date
-            try:
-                date.fromisoformat(transaction_date)
-            except ValueError:
-                messagebox.showerror(
-                    "Invalid Date",
-                    "Use a valid date in YYYY-MM-DD format.",
-                    parent=window
-                )
+            values = self.validate_transaction(
+                amount_var.get(),
+                description_var.get(),
+                type_var.get(),
+                category_var.get(),
+                date_var.get(),
+                parent=window
+            )
+            if values is None:
                 return
 
             # Save to database
@@ -630,22 +701,12 @@ class FinanceScreen(ttk.Frame):
 
                 finance_backend.update_transaction(
                     transaction[0],
-                    amount,
-                    description,
-                    transaction_type,
-                    category,
-                    transaction_date
+                    *values
                 )
 
             else:
 
-                finance_backend.add_transaction(
-                    amount,
-                    description,
-                    transaction_type,
-                    category,
-                    transaction_date
-                )
+                finance_backend.add_transaction(*values)
 
             window.destroy()
             self.refresh_data()
@@ -679,6 +740,69 @@ class FinanceScreen(ttk.Frame):
             pady=8,
             cursor="hand2"
         ).pack(side="right")
+
+    def validate_transaction(
+        self,
+        amount_text,
+        description,
+        transaction_type,
+        category,
+        transaction_date,
+        parent=None
+    ):
+        amount_text = amount_text.strip()
+        description = description.strip()
+        transaction_type = transaction_type.strip().lower()
+        category = category.strip()
+        transaction_date = transaction_date.strip()
+
+        try:
+            amount = float(amount_text)
+            if amount <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror(
+                "Invalid Amount",
+                "Enter an amount greater than zero.",
+                parent=parent or self
+            )
+            return None
+
+        if not description:
+            messagebox.showerror(
+                "Missing Description",
+                "Please enter a description.",
+                parent=parent or self
+            )
+            return None
+
+        if not category:
+            messagebox.showerror(
+                "Missing Category",
+                "Please enter a category.",
+                parent=parent or self
+            )
+            return None
+
+        if transaction_type not in ("income", "expense"):
+            messagebox.showerror(
+                "Invalid Type",
+                "Choose Income or Expense.",
+                parent=parent or self
+            )
+            return None
+
+        try:
+            date.fromisoformat(transaction_date)
+        except ValueError:
+            messagebox.showerror(
+                "Invalid Date",
+                "Use a valid date in YYYY-MM-DD format.",
+                parent=parent or self
+            )
+            return None
+
+        return amount, description, transaction_type, category, transaction_date
 
     #Form Label Helper
     def add_form_label(self, parent, text):
