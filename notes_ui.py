@@ -7,7 +7,6 @@ from features import notes as notes_backend
 
 
 class NotesScreen(ttk.Frame):
-
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -16,26 +15,19 @@ class NotesScreen(ttk.Frame):
         self.teal = "#075753"
         self.dark_text = "#173C3A"
         self.muted_text = "#71817D"
-
         self.selected_note_id = None
-
         self.setup_styles()
         self.create_layout()
         self.refresh_notes()
 
-    # -----------------------------
-    # Styles
-    # -----------------------------
-
+    
+    #Stylessss
     def setup_styles(self):
-
         style = ttk.Style()
-
         style.configure(
             "Notes.TFrame",
             background=self.bg_color
         )
-
         style.configure(
             "Notes.Treeview",
             background="white",
@@ -44,7 +36,6 @@ class NotesScreen(ttk.Frame):
             rowheight=38,
             font=("Segoe UI", 10)
         )
-
         style.configure(
             "Notes.Treeview.Heading",
             background="#E9EFEC",
@@ -52,19 +43,14 @@ class NotesScreen(ttk.Frame):
             font=("Segoe UI", 10, "bold"),
             relief="flat"
         )
-
         style.map(
             "Notes.Treeview",
             background=[("selected", "#D5E9E4")],
             foreground=[("selected", self.dark_text)]
         )
 
-    # -----------------------------
-    # Main Layout
-    # -----------------------------
-
+    #Main Layout
     def create_layout(self):
-
         self.configure(style="Notes.TFrame")
 
         # Header
@@ -99,16 +85,11 @@ class NotesScreen(ttk.Frame):
         content.columnconfigure(0, weight=1)
         content.columnconfigure(1, weight=2)
         content.rowconfigure(0, weight=1)
-
         self.create_notes_list(content)
         self.create_editor(content)
 
-    # -----------------------------
-    # Notes List
-    # -----------------------------
-
+    #Notes List
     def create_notes_list(self, parent):
-
         left = tk.Frame(
             parent,
             bg="white",
@@ -151,7 +132,6 @@ class NotesScreen(ttk.Frame):
 
         # Search
         self.search_var = tk.StringVar()
-
         search = ttk.Entry(
             left,
             textvariable=self.search_var,
@@ -255,10 +235,7 @@ class NotesScreen(ttk.Frame):
             cursor="hand2"
         ).pack(fill="x", padx=15, pady=(0, 15))
 
-    # -----------------------------
-    # Note Editor
-    # -----------------------------
-
+    #Note Editor
     def create_editor(self, parent):
 
         right = tk.Frame(
@@ -381,10 +358,7 @@ class NotesScreen(ttk.Frame):
             cursor="hand2"
         ).pack(anchor="e", padx=20, pady=18)
 
-    # -----------------------------
-    # Refresh Notes
-    # -----------------------------
-
+    #Refresh Notes
     def refresh_notes(self):
 
         for item in self.tree.get_children():
@@ -443,10 +417,7 @@ class NotesScreen(ttk.Frame):
                 )
             )
 
-    # -----------------------------
-    # Select Note
-    # -----------------------------
-
+    #Selects Note
     def select_note(self, event=None):
 
         selected = self.tree.selection()
@@ -480,10 +451,7 @@ class NotesScreen(ttk.Frame):
         self.content_text.delete("1.0", "end")
         self.content_text.insert("1.0", note[2] or "")
 
-    # -----------------------------
-    # New Note
-    # -----------------------------
-
+    #New Note
     def new_note(self):
 
         self.selected_note_id = None
@@ -497,10 +465,7 @@ class NotesScreen(ttk.Frame):
 
         self.content_text.delete("1.0", "end")
 
-    # -----------------------------
-    # Save Note
-    # -----------------------------
-
+    #Save Note
     def save_note(self):
 
         title = self.title_var.get().strip()
@@ -557,10 +522,7 @@ class NotesScreen(ttk.Frame):
         self.new_note()
         self.refresh_notes()
 
-    # -----------------------------
-    # Delete Note
-    # -----------------------------
-
+    #Delete Note
     def delete_note(self):
 
         selected = self.tree.selection()
