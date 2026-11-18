@@ -5,10 +5,18 @@ from habits_ui import HabitsScreen
 from finance_ui import FinanceScreen
 from notes_ui import NotesScreen
 from journal_ui import JournalScreen
+from dashboard_ui import DashboardScreen
 
+#creates the main window for our application
 root = tk.Tk()
+
+#set the title of the application
 root.title("DeskOS")
+
+#set the starting window size ig
 root.geometry("900x600")
+
+#set the minimum window size
 root.minsize(800, 500)
 
 #Main layout
@@ -32,7 +40,7 @@ logo = tk.Label(
 )
 logo.pack(fill="x")
 
-
+#Stores the name of all the available pages
 pages = [
     "Dashboard",
     "Tasks",
@@ -43,11 +51,16 @@ pages = [
     "Search"
 ]
 
+#displays the screen selected by the user
 def show_page(page_name):
     for widget in content.winfo_children():
         widget.destroy()
 
-    if page_name == "Tasks":
+    if page_name == "Dashboard":
+        screen = DashboardScreen(content)
+        screen.pack(fill="both", expand=True)
+
+    elif page_name == "Tasks":
         screen = TasksScreen(content)
         screen.pack(fill="both", expand=True)
 
@@ -78,7 +91,7 @@ def show_page(page_name):
         heading.pack(anchor="w", padx=30, pady=30)
 
 
-
+#loops through every page in pages list
 for page in pages:
     button = tk.Button(
         sidebar,
@@ -100,6 +113,7 @@ for page in pages:
 
 show_page("Dashboard")
 
+#keeps the application running
 root.mainloop()
 
 #

@@ -3,12 +3,16 @@ from tkinter import ttk
 from datetime import date
 from features.dashboard import get_dashboard_summary
 
+#Main Screen
 class DashboardScreen(tk.Frame):
-    def __init___(self,parent):
+
+    #initialize the main dashbaord
+    def __init__(self,parent):
         super().__init__(parent, bg="#F5F4EF")
         self.create_header()
         self.load_dashboard()
 
+    #creates the title and stuuff
     def create_header(self):
         header = tk.Frame(self, bg="#F5F4EF")
         header.pack(fill="x", padx=30, pady=(25, 15))
@@ -37,6 +41,7 @@ class DashboardScreen(tk.Frame):
         )
         refresh_button.pack(side="right")
 
+    #cretes summary cards that we can use later
     def create_card(self, parent, title, value, color="#075753"):
         card = tk.Frame(
             parent,
@@ -44,7 +49,7 @@ class DashboardScreen(tk.Frame):
             padx=15,
             pady=12,
             highlightbackground="#E1E5E1",
-            higlightthickness=1
+            highlightthickness=1
         )
 
         tk.Label(
@@ -65,6 +70,7 @@ class DashboardScreen(tk.Frame):
 
         return card
 
+    #fetch the data and displays it
     def load_dashboard(self):
         if hasattr(self, "dashboard_content"):
             self.dashboard_content.destroy()
@@ -157,6 +163,7 @@ class DashboardScreen(tk.Frame):
         )
         info.pack(anchor="w", pady=(12, 0))
 
+    #displays tasks that are coming up
     def create_upcoming_tasks(self, parent, tasks):
         panel = tk.Frame(
             parent,
@@ -215,6 +222,7 @@ class DashboardScreen(tk.Frame):
                 font=("Segoe UI", 9)
             ).pack(anchor="w")
 
+    #displays the notes which are recenlty created
     def create_recent_notes(self, parent, notes):
         panel = tk.Frame(
             parent,
@@ -222,7 +230,7 @@ class DashboardScreen(tk.Frame):
             padx=15,
             pady=15,
             highlightbackground="#E1E5E1",
-            higlightthickness=1
+            highlightthickness=1
         )
         panel.grid(
             row=0,
