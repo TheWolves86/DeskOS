@@ -112,10 +112,12 @@ class JournalScreen(ttk.Frame):
             sticky="nsew",
             padx=(0, 10)
         )
+        left.columnconfigure(0, weight=1)
+        left.rowconfigure(3, weight=1)
 
         # Heading
         heading = tk.Frame(left, bg="white")
-        heading.pack(fill="x", padx=15, pady=(15, 10))
+        heading.grid(row=0, column=0, sticky="ew", padx=15, pady=(15, 10))
 
         tk.Label(
             heading,
@@ -141,7 +143,7 @@ class JournalScreen(ttk.Frame):
 
         # Date filter
         filter_frame = tk.Frame(left, bg="white")
-        filter_frame.pack(fill="x", padx=15, pady=(0, 10))
+        filter_frame.grid(row=1, column=0, sticky="ew", padx=15, pady=(0, 10))
 
         self.filter_date_var = tk.StringVar(value="")
 
@@ -178,22 +180,18 @@ class JournalScreen(ttk.Frame):
             padx=10,
             pady=6,
             cursor="hand2"
-        ).pack(fill="x", padx=15, pady=(0, 10))
+        ).grid(row=2, column=0, sticky="ew", padx=15, pady=(0, 10))
 
         # Table
         table_frame = tk.Frame(left, bg="white")
-        table_frame.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=(0, 10)
-        )
+        table_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
         self.tree = ttk.Treeview(
             table_frame,
             columns=("id", "title", "date"),
             show="headings",
-            style="Journal.Treeview"
+            style="Journal.Treeview",
+            height=5
         )
 
         self.tree.heading("id", text="ID")
@@ -238,7 +236,7 @@ class JournalScreen(ttk.Frame):
             padx=10,
             pady=8,
             cursor="hand2"
-        ).pack(fill="x", padx=15, pady=(0, 15))
+        ).grid(row=4, column=0, sticky="ew", padx=15, pady=(0, 15))
 
     #Journal Editor
     def create_editor(self, parent):
@@ -262,10 +260,10 @@ class JournalScreen(ttk.Frame):
             bg="white",
             fg=self.dark_text,
             font=("Segoe UI", 14, "bold")
-        ).pack(anchor="w", padx=20, pady=(18, 15))
+        ).grid(row=0, column=0, sticky="w", padx=20, pady=(18, 15))
 
         form = tk.Frame(right, bg="white")
-        form.pack(fill="both", expand=True, padx=20)
+        form.grid(row=1, column=0, sticky="nsew", padx=20)
 
         # Title
         tk.Label(
@@ -318,6 +316,7 @@ class JournalScreen(ttk.Frame):
         self.content_text = tk.Text(
             text_frame,
             wrap="word",
+            height=8,
             font=("Segoe UI", 10),
             bg="#FCFCFA",
             fg=self.dark_text,
@@ -362,7 +361,10 @@ class JournalScreen(ttk.Frame):
             padx=20,
             pady=9,
             cursor="hand2"
-        ).pack(anchor="e", padx=20, pady=18)
+        ).grid(row=2, column=0, sticky="e", padx=20, pady=(10, 18))
+
+        right.columnconfigure(0, weight=1)
+        right.rowconfigure(1, weight=1)
 
     #Refresh Entries
     def refresh_entries(self):

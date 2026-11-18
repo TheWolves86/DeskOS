@@ -3,6 +3,8 @@ from tkinter import ttk
 from tasks_ui import TasksScreen
 from habits_ui import HabitsScreen
 from finance_ui import FinanceScreen
+from notes_ui import NotesScreen
+from journal_ui import JournalScreen
 
 root = tk.Tk()
 root.title("DeskOS")
@@ -55,6 +57,14 @@ def show_page(page_name):
 
     elif page_name == "Finance":
         screen = FinanceScreen(content)
+        screen.pack(fill="both", expand=True)
+
+    elif page_name == "Notes":
+        screen = NotesScreen(content)
+        screen.pack(fill="both", expand=True)
+
+    elif page_name == "Journal":
+        screen = JournalScreen(content)
         screen.pack(fill="both", expand=True)
 
     else:
