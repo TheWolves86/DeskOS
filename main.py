@@ -6,6 +6,7 @@ from finance_ui import FinanceScreen
 from notes_ui import NotesScreen
 from journal_ui import JournalScreen
 from dashboard_ui import DashboardScreen
+from global_search_ui import SearchScreen
 
 #creates the main window for our application
 root = tk.Tk()
@@ -78,6 +79,10 @@ def show_page(page_name):
 
     elif page_name == "Journal":
         screen = JournalScreen(content)
+        screen.pack(fill="both", expand=True)
+
+    elif page_name == "Search":
+        screen = SearchScreen(content)
         screen.pack(fill="both", expand=True)
 
     else:
