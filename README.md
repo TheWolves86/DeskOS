@@ -81,3 +81,5 @@ DeskOS was built as a learning project to help me improve my python and the abil
 It's not meant to replace an actual computer operating system. It's my own little productivity system that will later scale to something really useful for everyonee
 
 Thanks for checking it out! :)
+
+<img width="1366" height="730" alt="image" src="https://github.com/user-attachments/assets/a5e11561-5dee-464b-958c-2ef50698121d" />
