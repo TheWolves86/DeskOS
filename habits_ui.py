@@ -2,348 +2,352 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date
+from features import habits as backend
 
-from features import habits as habit_backend
-
-
-#DeskOs Colorsss
-BG = "#F5F4EF"
-TEAL = "#075753"
-TEAL_LIGHT = "#167E75"
-TEXT = "#173C3A"
-MUTED = "#71807A"
+BG = "#F4F6F3"
 WHITE = "#FFFFFF"
+TEXT = "#183B37"
+MUTED = "#82918B"
+ACCENT = "#268477"
+BORDER = "#E3EAE5"
 
-#Code of the habit's screen
-class HabitsScreen(ttk.Frame):
+
+class HabitsScreen(tk.Frame):
 
     def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
+        super().__init__(parent, bg=BG)
+
         self.search_var = tk.StringVar()
         self.filter_var = tk.StringVar(value="Active")
-        self.setup_styles()
 
+        self.setup_styles()
         self.build_header()
         self.build_summary()
         self.build_toolbar()
-        self.build_habit_table()
-        self.build_bottom_bar()
-
+        self.build_table()
+        self.build_actions()
         self.refresh_habits()
 
-    #Styles
+    #Setup all the styless
     def setup_styles(self):
-
         style = ttk.Style()
 
         style.configure(
-            "Habits.TFrame",
-            background=BG
-        )
-
-        style.configure(
-            "Habits.TLabel",
-            background=BG,
+            "Habits.Treeview",
+            background=WHITE,
             foreground=TEXT,
+            fieldbackground=WHITE,
+            rowheight=40,
+            borderwidth=0,
             font=("Segoe UI", 10)
         )
 
         style.configure(
-            "HabitsTitle.TLabel",
-            background=BG,
-            foreground=TEXT,
-            font=("Segoe UI", 24, "bold")
-        )
-
-        style.configure(
-            "Habits.Treeview",
-            font=("Segoe UI", 10),
-            rowheight=38,
-            background=WHITE,
-            fieldbackground=WHITE
-        )
-
-        style.configure(
             "Habits.Treeview.Heading",
-            font=("Segoe UI", 10, "bold")
+            background="#EAF0EC",
+            foreground=TEXT,
+            font=("Segoe UI", 9, "bold"),
+            relief="flat",
+            padding=10
         )
 
-    #Header
+        style.map(
+            "Habits.Treeview",
+            background=[("selected", "#D5E9E2")],
+            foreground=[("selected", TEXT)]
+        )
+
+    #Builds the header ig
     def build_header(self):
+        header = tk.Frame(self, bg=BG)
+        header.pack(fill="x", padx=30, pady=(25, 18))
 
-        header = ttk.Frame(
-            self,
-            style="Habits.TFrame",
-            padding=(25, 25, 25, 12)
-        )
-
-        header.pack(fill="x")
-
-        title = ttk.Label(
+        tk.Label(
             header,
             text="Habits",
-            style="HabitsTitle.TLabel"
-        )
+            bg=BG,
+            fg=TEXT,
+            font=("Segoe UI", 25, "bold")
+        ).pack(anchor="w")
 
-        title.pack(anchor="w")
-
-        subtitle = ttk.Label(
+        tk.Label(
             header,
             text="Build consistency, one day at a time.",
-            style="Habits.TLabel"
-        )
+            bg=BG,
+            fg=MUTED,
+            font=("Segoe UI", 10)
+        ).pack(anchor="w", pady=(4, 0))
 
-        subtitle.pack(anchor="w", pady=(4, 0))
-
-    #Summary
+    #Summary cards
     def build_summary(self):
+        frame = tk.Frame(self, bg=BG)
+        frame.pack(fill="x", padx=30, pady=(0, 18))
 
-        summary = ttk.Frame(
-            self,
-            style="Habits.TFrame",
-            padding=(25, 10)
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+
+        self.active_label = self.create_card(
+            frame, 0, "Active Habits", "0", ACCENT
         )
 
-        summary.pack(fill="x")
-
-        self.active_label = ttk.Label(
-            summary,
-            text="Active Habits: 0",
-            style="Habits.TLabel"
+        self.completed_label = self.create_card(
+            frame, 1, "Completed Today", "0 / 0", "#3B9B72"
         )
 
-        self.active_label.pack(side="left")
-
-        self.completed_label = ttk.Label(
-            summary,
-            text="Completed Today: 0/0",
-            style="Habits.TLabel"
+    def create_card(self, parent, column, title, value, color):
+        card = tk.Frame(
+            parent,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
         )
 
-        self.completed_label.pack(side="right")
+        card.grid(
+            row=0,
+            column=column,
+            sticky="nsew",
+            padx=(0 if column == 0 else 6, 0 if column == 1 else 6)
+        )
 
-    #Toolbar
+        tk.Frame(card, bg=color, height=4).pack(fill="x")
+
+        body = tk.Frame(card, bg=WHITE, padx=17, pady=13)
+        body.pack(fill="both", expand=True)
+
+        tk.Label(
+            body,
+            text=title.upper(),
+            bg=WHITE,
+            fg=MUTED,
+            font=("Segoe UI", 8, "bold")
+        ).pack(anchor="w")
+
+        label = tk.Label(
+            body,
+            text=value,
+            bg=WHITE,
+            fg=color,
+            font=("Segoe UI", 21, "bold")
+        )
+        label.pack(anchor="w", pady=(7, 0))
+
+        return label
+
+    #Search and filters
     def build_toolbar(self):
+        toolbar = tk.Frame(self, bg=BG)
+        toolbar.pack(fill="x", padx=30, pady=(0, 15))
 
-        toolbar = ttk.Frame(
-            self,
-            style="Habits.TFrame",
-            padding=(25, 10)
-        )
-
-        toolbar.pack(fill="x")
-
-        #Search
-        self.search_entry = ttk.Entry(
+        search_frame = tk.Frame(
             toolbar,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+        search_frame.pack(side="left", fill="x", expand=True)
+
+        tk.Label(
+            search_frame,
+            text="⌕",
+            bg=WHITE,
+            fg=MUTED,
+            font=("Segoe UI", 16)
+        ).pack(side="left", padx=(11, 3))
+
+        ttk.Entry(
+            search_frame,
             textvariable=self.search_var
+        ).pack(side="left", fill="x", expand=True, ipady=7, padx=7)
+
+        self.search_var.trace_add(
+            "write",
+            lambda *args: self.refresh_habits()
         )
 
-        self.search_entry.pack(
-            side="left",
-            fill="x",
-            expand=True
-        )
-
-        self.search_entry.bind(
-            "<KeyRelease>",
-            lambda event: self.refresh_habits()
-        )
-
-        #Filters
-        filters = ttk.Combobox(
+        ttk.Combobox(
             toolbar,
             textvariable=self.filter_var,
             values=["All", "Active", "Archived"],
             state="readonly",
             width=12
+        ).pack(side="left", padx=10, ipady=5)
+
+        self.filter_var.trace_add(
+            "write",
+            lambda *args: self.refresh_habits()
         )
 
-        filters.pack(side="left", padx=8)
-
-        filters.bind(
-            "<<ComboboxSelected>>",
-            lambda event: self.refresh_habits()
-        )
-
-        #Add Habit button
-        add_button = tk.Button(
+        tk.Button(
             toolbar,
-            text="+ Add Habit",
+            text="+  Add Habit",
             command=self.open_habit_form,
-            bg=TEAL,
+            bg=ACCENT,
             fg=WHITE,
-            activebackground=TEAL_LIGHT,
+            activebackground="#1D6E63",
             activeforeground=WHITE,
             relief="flat",
             bd=0,
             font=("Segoe UI", 10, "bold"),
-            padx=14,
-            pady=8,
+            padx=17,
+            pady=10,
             cursor="hand2"
-        )
+        ).pack(side="right")
 
-        add_button.pack(side="right")
-
-    #the excel type table which shows habit
-    def build_habit_table(self):
-
-        table_frame = ttk.Frame(
+    #Habit's table
+    def build_table(self):
+        container = tk.Frame(
             self,
-            style="Habits.TFrame",
-            padding=(25, 5, 25, 10)
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
         )
 
-        table_frame.pack(
+        container.pack(
             fill="both",
-            expand=True
+            expand=True,
+            padx=30,
+            pady=(0, 15)
         )
 
-        columns = (
-            "id",
-            "habit",
-            "category",
-            "status",
-            "streak"
+        heading = tk.Frame(container, bg=WHITE)
+        heading.pack(fill="x", padx=18, pady=15)
+
+        tk.Label(
+            heading,
+            text="Your Habits",
+            bg=WHITE,
+            fg=TEXT,
+            font=("Segoe UI", 13, "bold")
+        ).pack(side="left")
+
+        self.count_label = tk.Label(
+            heading,
+            text="0 habits",
+            bg=WHITE,
+            fg=MUTED,
+            font=("Segoe UI", 9)
         )
+        self.count_label.pack(side="right")
+
+        tk.Frame(container, bg=BORDER, height=1).pack(fill="x")
+
+        area = tk.Frame(container, bg=WHITE)
+        area.pack(fill="both", expand=True, padx=12, pady=12)
+
+        columns = ("id", "habit", "category", "status", "streak")
 
         self.table = ttk.Treeview(
-            table_frame,
+            area,
             columns=columns,
             show="headings",
             style="Habits.Treeview",
             selectmode="browse"
         )
 
-        self.table.heading("id", text="ID")
-        self.table.heading("habit", text="Habit")
-        self.table.heading("category", text="Category")
-        self.table.heading("status", text="Today's Status")
-        self.table.heading("streak", text="Streak")
+        headings = {
+            "id": "ID",
+            "habit": "HABIT",
+            "category": "CATEGORY",
+            "status": "TODAY",
+            "streak": "STREAK"
+        }
 
-        self.table.column(
-            "id",
-            width=45,
-            anchor="center"
-        )
+        for column, title in headings.items():
+            self.table.heading(column, text=title)
 
-        self.table.column(
-            "habit",
-            width=230
-        )
+        self.table.column("id", width=45, anchor="center", stretch=False)
+        self.table.column("habit", width=220)
+        self.table.column("category", width=130, anchor="center")
+        self.table.column("status", width=120, anchor="center")
+        self.table.column("streak", width=100, anchor="center")
 
-        self.table.column(
-            "category",
-            width=130
-        )
-
-        self.table.column(
-            "status",
-            width=130,
-            anchor="center"
-        )
-
-        self.table.column(
-            "streak",
-            width=100,
-            anchor="center"
-        )
+        self.table.tag_configure("done", foreground="#26845D")
+        self.table.tag_configure("pending", foreground=TEXT)
+        self.table.tag_configure("archived", foreground=MUTED)
 
         scrollbar = ttk.Scrollbar(
-            table_frame,
+            area,
             orient="vertical",
             command=self.table.yview
         )
 
-        self.table.configure(
-            yscrollcommand=scrollbar.set
-        )
+        self.table.configure(yscrollcommand=scrollbar.set)
 
-        self.table.pack(
-            side="left",
-            fill="both",
-            expand=True
-        )
-
-        scrollbar.pack(
-            side="right",
-            fill="y"
-        )
+        self.table.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         self.table.bind(
             "<Double-1>",
             lambda event: self.edit_selected_habit()
         )
 
-    #The buttons in the bottom which will perform crud tasks
-    def build_bottom_bar(self):
+    #Actions
+    def build_actions(self):
+        footer = tk.Frame(self, bg=BG)
+        footer.pack(fill="x", padx=30, pady=(0, 20))
 
-        bottom = ttk.Frame(
-            self,
-            style="Habits.TFrame",
-            padding=(25, 10, 25, 20)
-        )
+        self.action_button(
+            footer, "✓  Mark Done", self.complete_selected_habit
+        ).pack(side="left", padx=(0, 7))
 
-        bottom.pack(fill="x")
+        self.action_button(
+            footer, "↺  Mark Undone", self.undo_selected_habit
+        ).pack(side="left", padx=7)
 
-        ttk.Button(
-            bottom,
-            text="Mark Done",
-            command=self.complete_selected_habit
-        ).pack(side="left", padx=(0, 8))
+        self.action_button(
+            footer, "Edit", self.edit_selected_habit
+        ).pack(side="left", padx=7)
 
-        ttk.Button(
-            bottom,
-            text="Mark Undone",
-            command=self.undo_selected_habit
-        ).pack(side="left", padx=8)
+        self.action_button(
+            footer, "History", self.show_history
+        ).pack(side="left", padx=7)
 
-        ttk.Button(
-            bottom,
-            text="Edit",
-            command=self.edit_selected_habit
-        ).pack(side="left", padx=8)
-
-        ttk.Button(
-            bottom,
-            text="History",
-            command=self.show_history
-        ).pack(side="left", padx=8)
-
-        ttk.Button(
-            bottom,
+        tk.Button(
+            footer,
             text="Delete",
-            command=self.delete_selected_habit
-        ).pack(side="left", padx=8)
+            command=self.delete_selected_habit,
+            bg="#FCECEB",
+            fg="#B64A43",
+            activebackground="#F5D8D5",
+            relief="flat",
+            bd=0,
+            padx=15,
+            pady=8,
+            cursor="hand2",
+            font=("Segoe UI", 9, "bold")
+        ).pack(side="left", padx=7)
 
-        self.count_label = ttk.Label(
-            bottom,
-            text="0 habits",
-            style="Habits.TLabel"
+    def action_button(self, parent, text, command):
+        return tk.Button(
+            parent,
+            text=text,
+            command=command,
+            bg=WHITE,
+            fg=TEXT,
+            activebackground="#EAF0EC",
+            relief="flat",
+            bd=0,
+            padx=13,
+            pady=8,
+            cursor="hand2",
+            font=("Segoe UI", 9, "bold")
         )
 
-        self.count_label.pack(side="right")
-
-    #Refreshes Habits after adding or editing or doing anything to habit
+    #Refreshes habit information
     def refresh_habits(self):
+        if not hasattr(self, "table"):
+            return
 
         for item in self.table.get_children():
             self.table.delete(item)
 
         try:
-            habits = habit_backend.get_habits()
-
+            habits = backend.get_habits()
         except Exception as error:
-
-            messagebox.showerror(
-                "Database Error",
-                f"Could not load habits:\n{error}"
-            )
-
+            messagebox.showerror("Database Error", str(error))
             return
 
-        search_text = self.search_var.get().strip().lower()
+        query = self.search_var.get().strip().lower()
         selected_filter = self.filter_var.get()
 
         active_count = 0
@@ -351,49 +355,39 @@ class HabitsScreen(ttk.Frame):
         visible_count = 0
 
         for habit in habits:
+            habit_id, name, description, category, created_at, active = habit
 
-            (
-                habit_id,
-                name,
-                description,
-                category,
-                created_at,
-                active
-            ) = habit
+            is_active = bool(active)
+            is_done = backend.is_habit_done_today(habit_id)
 
-            #Counts active habits
-            if active:
+            if is_active:
                 active_count += 1
-
-                if habit_backend.is_habit_done_today(habit_id):
+                if is_done:
                     completed_count += 1
 
-            #Applies search
-            searchable_text = (
-                f"{name or ''} "
-                f"{description or ''} "
-                f"{category or ''}"
+            searchable = (
+                f"{name or ''} {description or ''} {category or ''}"
             ).lower()
 
-            if search_text and search_text not in searchable_text:
+            if query and query not in searchable:
                 continue
 
-            #Applies active/archive filter
-            if selected_filter == "Active" and not active:
+            if selected_filter == "Active" and not is_active:
                 continue
 
-            if selected_filter == "Archived" and active:
+            if selected_filter == "Archived" and is_active:
                 continue
 
-            #Todays completion status
-            is_done = habit_backend.is_habit_done_today(habit_id)
+            streak = backend.get_habit_streak(habit_id)
 
             status = "Done" if is_done else "Not Done"
 
-            #Calculates the streak
-            streak = habit_backend.get_habit_streak(habit_id)
+            if not is_active:
+                tag = "archived"
+                status = "Archived"
+            else:
+                tag = "done" if is_done else "pending"
 
-            #Insert into table
             self.table.insert(
                 "",
                 "end",
@@ -401,112 +395,81 @@ class HabitsScreen(ttk.Frame):
                 values=(
                     habit_id,
                     name,
-                    category,
+                    category or "General",
                     status,
                     f"{streak} days"
-                )
+                ),
+                tags=(tag,)
             )
 
             visible_count += 1
 
-        #Updates the summary
-        self.active_label.configure(
-            text=f"Active Habits: {active_count}"
+        self.active_label.config(text=str(active_count))
+        self.completed_label.config(
+            text=f"{completed_count} / {active_count}"
         )
+        self.count_label.config(text=f"{visible_count} habits")
 
-        self.completed_label.configure(
-            text=f"Completed Today: {completed_count}/{active_count}"
-        )
-
-        self.count_label.configure(
-            text=f"{visible_count} habits"
-        )
-
-    #Add/Edit the habit form
+    #Add or edit a habit
     def open_habit_form(self, habit=None):
-
         editing = habit is not None
 
         window = tk.Toplevel(self)
-
-        window.title(
-            "Edit Habit" if editing else "Add Habit"
-        )
-
-        window.geometry("420x390")
+        window.title("Edit Habit" if editing else "New Habit")
+        window.geometry("440x450")
         window.resizable(False, False)
         window.configure(bg=BG)
-
         window.transient(self.winfo_toplevel())
 
-        #Heading
         tk.Label(
             window,
-            text="Edit Habit" if editing else "Add New Habit",
+            text="Edit Habit" if editing else "Create a Habit",
             bg=BG,
             fg=TEXT,
-            font=("Segoe UI", 20, "bold")
-        ).pack(
-            anchor="w",
-            padx=25,
-            pady=(22, 15)
-        )
+            font=("Segoe UI", 21, "bold")
+        ).pack(anchor="w", padx=28, pady=(24, 4))
 
-        form = tk.Frame(
+        tk.Label(
             window,
-            bg=BG
-        )
+            text="Make a small commitment to yourself.",
+            bg=BG,
+            fg=MUTED,
+            font=("Segoe UI", 9)
+        ).pack(anchor="w", padx=28, pady=(0, 15))
 
-        form.pack(
-            fill="both",
-            expand=True,
-            padx=25
-        )
+        form = tk.Frame(window, bg=BG)
+        form.pack(fill="both", expand=True, padx=28)
 
-        #Reusable field creator
-        def add_field(label_text, default=""):
-
+        def make_field(label, value=""):
             tk.Label(
                 form,
-                text=label_text,
+                text=label,
                 bg=BG,
                 fg=TEXT,
-                font=("Segoe UI", 10)
-            ).pack(
-                anchor="w",
-                pady=(7, 3)
-            )
+                font=("Segoe UI", 9, "bold")
+            ).pack(anchor="w", pady=(9, 5))
 
             entry = ttk.Entry(form)
-
-            entry.pack(fill="x")
-
-            entry.insert(0, default)
-
+            entry.pack(fill="x", ipady=5)
+            entry.insert(0, str(value or ""))
             return entry
 
-        #Habit name
-        name_entry = add_field(
+        name_entry = make_field(
             "Habit name *",
             habit[1] if editing else ""
         )
 
-        #Description
-        description_entry = add_field(
+        description_entry = make_field(
             "Description",
-            (habit[2] or "") if editing else ""
+            habit[2] if editing else ""
         )
 
-        #Category
-        category_entry = add_field(
+        category_entry = make_field(
             "Category",
-            (habit[3] or "") if editing else "Personal"
+            habit[3] if editing else "Personal"
         )
 
-        #Active status
-        active_var = tk.IntVar(
-            value=habit[5] if editing else 1
-        )
+        active_var = tk.IntVar(value=habit[5] if editing else 1)
 
         tk.Checkbutton(
             form,
@@ -515,213 +478,153 @@ class HabitsScreen(ttk.Frame):
             bg=BG,
             fg=TEXT,
             activebackground=BG,
-            selectcolor=WHITE
-        ).pack(
-            anchor="w",
-            pady=12
-        )
+            selectcolor=WHITE,
+            font=("Segoe UI", 9)
+        ).pack(anchor="w", pady=13)
 
-        #Saves the Habit
-        def save_habit():
-
+        def save():
             name = name_entry.get().strip()
-
             description = description_entry.get().strip()
-
             category = category_entry.get().strip()
 
-            active = active_var.get()
-
             if not name:
-
                 messagebox.showwarning(
-                    "Missing Information",
+                    "Missing Name",
                     "Please enter a habit name.",
                     parent=window
                 )
-
                 return
 
             try:
-
                 if editing:
-
-                    habit_backend.update_habit(
+                    backend.update_habit(
                         habit[0],
                         name,
                         description,
                         category,
-                        active
+                        active_var.get()
                     )
-
                 else:
-
-                    habit_backend.add_habit(
+                    backend.add_habit(
                         name,
                         description,
                         category,
                         date.today().isoformat(),
-                        active
+                        active_var.get()
                     )
 
                 window.destroy()
-
                 self.refresh_habits()
 
             except Exception as error:
-
                 messagebox.showerror(
-                    "Could Not Save",
+                    "Save Failed",
                     str(error),
                     parent=window
                 )
 
-        #Saves button
+        buttons = tk.Frame(window, bg=BG)
+        buttons.pack(fill="x", padx=28, pady=20)
+
         tk.Button(
-            window,
+            buttons,
+            text="Cancel",
+            command=window.destroy,
+            bg="#E9EFEC",
+            fg=TEXT,
+            relief="flat",
+            padx=16,
+            pady=9,
+            cursor="hand2"
+        ).pack(side="left")
+
+        tk.Button(
+            buttons,
             text="Save Habit",
-            command=save_habit,
-            bg=TEAL,
+            command=save,
+            bg=ACCENT,
             fg=WHITE,
-            activebackground=TEAL_LIGHT,
-            activeforeground=WHITE,
+            activebackground="#1D6E63",
             relief="flat",
             padx=18,
             pady=9,
             cursor="hand2"
-        ).pack(
-            anchor="e",
-            padx=25,
-            pady=15
-        )
+        ).pack(side="right")
 
-        #Center the form
         window.update_idletasks()
 
-        parent_window = self.winfo_toplevel()
+        parent = self.winfo_toplevel()
+        x = parent.winfo_rootx() + (parent.winfo_width() - 440) // 2
+        y = parent.winfo_rooty() + (parent.winfo_height() - 450) // 2
 
-        x = parent_window.winfo_rootx()
-        y = parent_window.winfo_rooty()
-
-        parent_width = parent_window.winfo_width()
-        parent_height = parent_window.winfo_height()
-
-        window_width = 420
-        window_height = 390
-
-        position_x = x + (parent_width - window_width) // 2
-        position_y = y + (parent_height - window_height) // 2
-
-        window.geometry(
-            f"{window_width}x{window_height}+{position_x}+{position_y}"
-        )
-
+        window.geometry(f"+{x}+{y}")
         window.grab_set()
-
         name_entry.focus_set()
 
-    #Get Selected Habit
+    #Get selected habit
     def get_selected_habit(self):
-
         selected = self.table.selection()
 
         if not selected:
-
             messagebox.showinfo(
                 "Select a Habit",
                 "Please select a habit first."
             )
-
             return None
 
         habit_id = int(selected[0])
 
         try:
-
-            for habit in habit_backend.get_habits():
-
-                if habit[0] == habit_id:
-                    return habit
-
-            messagebox.showerror(
-                "Habit Not Found",
-                "This habit could not be found."
+            return next(
+                (habit for habit in backend.get_habits()
+                 if habit[0] == habit_id),
+                None
             )
-
-            return None
-
         except Exception as error:
-
-            messagebox.showerror(
-                "Database Error",
-                str(error)
-            )
-
+            messagebox.showerror("Database Error", str(error))
             return None
 
-    #Edit Habit
+    #edits selected habit
     def edit_selected_habit(self):
-
         habit = self.get_selected_habit()
-
         if habit is not None:
-
             self.open_habit_form(habit)
 
-    #Mark Habit Done
+    #Mark's habit complete
     def complete_selected_habit(self):
-
         habit = self.get_selected_habit()
 
         if habit is None:
             return
 
         if not habit[5]:
-
             messagebox.showinfo(
                 "Archived Habit",
                 "Activate this habit before marking it done."
             )
-
             return
 
         try:
-
-            habit_backend.mark_habit_done_today(habit[0])
-
+            backend.mark_habit_done_today(habit[0])
             self.refresh_habits()
-
         except Exception as error:
+            messagebox.showerror("Update Failed", str(error))
 
-            messagebox.showerror(
-                "Could Not Complete Habit",
-                str(error)
-            )
-
-    #Mark Habit Undone
+    #Undos today's completion
     def undo_selected_habit(self):
-
         habit = self.get_selected_habit()
 
         if habit is None:
             return
 
         try:
-
-            habit_backend.mark_habit_undone_today(habit[0])
-
+            backend.mark_habit_undone_today(habit[0])
             self.refresh_habits()
-
         except Exception as error:
+            messagebox.showerror("Update Failed", str(error))
 
-            messagebox.showerror(
-                "Could Not Update Habit",
-                str(error)
-            )
-
-    #Delete a selected habit
+    # Delete selected habit
     def delete_selected_habit(self):
-
         habit = self.get_selected_habit()
 
         if habit is None:
@@ -729,96 +632,78 @@ class HabitsScreen(ttk.Frame):
 
         confirm = messagebox.askyesno(
             "Delete Habit",
-            f"Delete '{habit[1]}'?\nThis cannot be undone."
+            f"Delete '{habit[1]}'? This cannot be undone."
         )
 
         if not confirm:
             return
 
         try:
-
-            habit_backend.delete_habit(habit[0])
-
+            backend.delete_habit(habit[0])
             self.refresh_habits()
-
         except Exception as error:
+            messagebox.showerror("Delete Failed", str(error))
 
-            messagebox.showerror(
-                "Could Not Delete Habit",
-                str(error)
-            )
-
-    #Habit History
+    # View habit history
     def show_history(self):
-
         habit = self.get_selected_habit()
 
         if habit is None:
             return
 
         try:
-
-            history = habit_backend.get_habit_history(habit[0])
-
+            history = backend.get_habit_history(habit[0])
         except Exception as error:
-
-            messagebox.showerror(
-                "History Error",
-                str(error)
-            )
-
+            messagebox.showerror("History Error", str(error))
             return
 
         window = tk.Toplevel(self)
-
         window.title("Habit History")
-        window.geometry("350x400")
+        window.geometry("420x430")
         window.configure(bg=BG)
+        window.transient(self.winfo_toplevel())
 
         tk.Label(
             window,
             text=habit[1],
             bg=BG,
             fg=TEXT,
-            font=("Segoe UI", 18, "bold")
-        ).pack(
-            anchor="w",
-            padx=20,
-            pady=20
-        )
+            font=("Segoe UI", 20, "bold")
+        ).pack(anchor="w", padx=22, pady=(22, 4))
+
+        tk.Label(
+            window,
+            text="Your recorded progress",
+            bg=BG,
+            fg=MUTED,
+            font=("Segoe UI", 9)
+        ).pack(anchor="w", padx=22, pady=(0, 15))
 
         table = ttk.Treeview(
             window,
             columns=("date", "status"),
-            show="headings"
+            show="headings",
+            style="Habits.Treeview"
         )
 
-        table.heading("date", text="Date")
-        table.heading("status", text="Status")
+        table.heading("date", text="DATE")
+        table.heading("status", text="STATUS")
 
-        table.column("date", width=150)
-        table.column("status", width=120)
+        table.column("date", width=180, anchor="center")
+        table.column("status", width=150, anchor="center")
 
-        table.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=(0, 20)
-        )
+        table.pack(fill="both", expand=True, padx=22, pady=(0, 22))
 
-        #Sort newest dates first
-        history = sorted(
+        for log_date, completed in sorted(
             history,
-            key=lambda log: log[0],
+            key=lambda item: item[0],
             reverse=True
-        )
-
-        for log_date, completed in history:
-
-            status = "Done" if completed else "Not Done"
-
+        ):
             table.insert(
                 "",
                 "end",
-                values=(log_date, status)
+                values=(
+                    log_date,
+                    "Done" if completed else "Not Done"
+                )
             )
