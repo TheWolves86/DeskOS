@@ -420,8 +420,45 @@ class FinanceScreen(tk.Frame):
         window.configure(bg=BG)
         window.transient(self.winfo_toplevel())
 
+        scroll_area = tk.Frame(window, bg=BG)
+        scroll_area.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(
+            scroll_area,
+            bg=BG,
+            highlightthickness=0
+        )
+        scrollbar = ttk.Scrollbar(
+            scroll_area,
+            orient="vertical",
+            command=canvas.yview
+        )
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        content = tk.Frame(canvas, bg=BG)
+        content_window = canvas.create_window(
+            (0, 0),
+            window=content,
+            anchor="nw"
+        )
+        content.bind(
+            "<Configure>",
+            lambda event: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        canvas.bind(
+            "<Configure>",
+            lambda event: canvas.itemconfigure(
+                content_window,
+                width=event.width
+            )
+        )
+
         tk.Label(
-            window,
+            content,
             text="Edit Transaction" if editing else "New Transaction",
             bg=BG,
             fg=TEXT,
@@ -429,15 +466,15 @@ class FinanceScreen(tk.Frame):
         ).pack(anchor="w", padx=28, pady=(24, 4))
 
         tk.Label(
-            window,
+            content,
             text="Enter the transaction details below.",
             bg=BG,
             fg=MUTED,
             font=("Segoe UI", 9)
         ).pack(anchor="w", padx=28, pady=(0, 15))
 
-        form = tk.Frame(window, bg=BG)
-        form.pack(fill="both", expand=True, padx=28)
+        form = tk.Frame(content, bg=BG)
+        form.pack(fill="x", padx=28)
 
         def make_field(label, value=""):
             tk.Label(

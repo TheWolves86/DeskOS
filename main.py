@@ -260,7 +260,42 @@ class DeskOS:
         screen_class = screens.get(page_name)
 
         if screen_class:
-            screen = screen_class(self.page_container)
+            self.page_canvas = tk.Canvas(
+                self.page_container,
+                bg=BG,
+                highlightthickness=0
+            )
+            scrollbar = ttk.Scrollbar(
+                self.page_container,
+                orient="vertical",
+                command=self.page_canvas.yview
+            )
+            self.page_canvas.configure(yscrollcommand=scrollbar.set)
+
+            scrollbar.pack(side="right", fill="y")
+            self.page_canvas.pack(side="left", fill="both", expand=True)
+
+            page_content = tk.Frame(self.page_canvas, bg=BG)
+            self.page_window = self.page_canvas.create_window(
+                (0, 0),
+                window=page_content,
+                anchor="nw"
+            )
+            page_content.bind(
+                "<Configure>",
+                lambda event: self.page_canvas.configure(
+                    scrollregion=self.page_canvas.bbox("all")
+                )
+            )
+            self.page_canvas.bind(
+                "<Configure>",
+                lambda event: self.page_canvas.itemconfigure(
+                    self.page_window,
+                    width=event.width
+                )
+            )
+
+            screen = screen_class(page_content)
             screen.pack(fill="both", expand=True)
 
 
