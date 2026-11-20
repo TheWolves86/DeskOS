@@ -1,186 +1,279 @@
-
 import tkinter as tk
-from tkinter import ttk
-from features.search import global_search
+from tkinter import ttk, messagebox
+from features import search as backend
 
 
-class SearchScreen(tk.Frame):
+WHITE = "#FFFFFF"
+TEAL = "#268477"
+DARK = "#123B38"
+TEXT = "#243532"
+MUTED = "#7B8985"
+BORDER = "#E3EAE6"
 
-    #Initializez the screeen
+
+class SearchScreen(ttk.Frame):
     def __init__(self, parent):
-        super().__init__(parent, bg="#F5F4EF")
+        super().__init__(parent, padding=24)
 
-        self.create_header()
-        self.create_search_bar()
-        self.create_results_table()
+        self.results = []
 
-    #Creates the page's headingg
-    def create_header(self):
-        tk.Label(
+        self.setup_styles()
+        self.build_ui()
+
+    def setup_styles(self):
+        style = ttk.Style()
+
+        style.configure(
+            "Search.Treeview",
+            background=WHITE,
+            foreground=TEXT,
+            fieldbackground=WHITE,
+            rowheight=42,
+            font=("Segoe UI", 10),
+            borderwidth=0
+        )
+
+        style.configure(
+            "Search.Treeview.Heading",
+            background="#EDF2EF",
+            foreground=DARK,
+            font=("Segoe UI", 9, "bold"),
+            relief="flat"
+        )
+
+        style.map(
+            "Search.Treeview",
+            background=[("selected", "#DCEDE8")],
+            foreground=[("selected", DARK)]
+        )
+
+    def build_ui(self):
+        ttk.Label(
             self,
             text="Global Search",
-            bg="#F5F4EF",
-            fg="#173C3A",
-            font=("Segoe UI", 25, "bold")
-        ).pack(anchor="w", padx=30, pady=(25, 15))
+            font=("Segoe UI", 23, "bold"),
+            foreground=DARK
+        ).pack(anchor="w")
 
-    #Creates the search input and button
-    def create_search_bar(self):
-        search_frame = tk.Frame(self, bg="#F5F4EF")
-        search_frame.pack(fill="x", padx=30, pady=10)
+        ttk.Label(
+            self,
+            text="Find anything across your DeskOS workspace.",
+            font=("Segoe UI", 10),
+            foreground=MUTED
+        ).pack(anchor="w", pady=(4, 20))
 
-        self.search_entry = tk.Entry(
-            search_frame,
-            font=("Segoe UI", 12),
-            relief="flat",
-            bd=0
+        search_card = tk.Frame(
+            self,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+        search_card.pack(fill="x", pady=(0, 18))
+
+        search_row = tk.Frame(search_card, bg=WHITE)
+        search_row.pack(fill="x", padx=18, pady=18)
+
+        self.query_var = tk.StringVar()
+
+        self.search_entry = ttk.Entry(
+            search_row,
+            textvariable=self.query_var,
+            font=("Segoe UI", 12)
         )
         self.search_entry.pack(
             side="left",
             fill="x",
             expand=True,
-            ipady=10,
-            padx=(0, 10)
+            ipady=7
+        )
+        self.search_entry.bind(
+            "<Return>",
+            lambda event: self.search()
         )
 
-        self.search_entry.bind("<Return>", self.run_search)
-
         tk.Button(
-            search_frame,
+            search_row,
             text="Search",
-            command=self.run_search,
-            bg="#075753",
+            command=self.search,
+            bg=TEAL,
             fg="white",
+            activebackground=DARK,
+            activeforeground="white",
             relief="flat",
-            padx=20,
-            pady=9,
+            font=("Segoe UI", 10, "bold"),
+            padx=22,
+            pady=10,
             cursor="hand2"
+        ).pack(side="left", padx=(12, 0))
+
+        self.filter_var = tk.StringVar(value="All")
+
+        filter_row = tk.Frame(search_card, bg=WHITE)
+        filter_row.pack(fill="x", padx=18, pady=(0, 14))
+
+        ttk.Label(
+            filter_row,
+            text="Filter:",
+            background=WHITE,
+            foreground=MUTED
+        ).pack(side="left", padx=(0, 10))
+
+        self.filter_box = ttk.Combobox(
+            filter_row,
+            textvariable=self.filter_var,
+            values=[
+                "All",
+                "Tasks",
+                "Habits",
+                "Finance",
+                "Notes",
+                "Journal"
+            ],
+            state="readonly",
+            width=15
+        )
+        self.filter_box.pack(side="left")
+        self.filter_box.bind(
+            "<<ComboboxSelected>>",
+            lambda event: self.display_results()
+        )
+
+        results_header = tk.Frame(self, bg="#F4F6F3")
+        results_header.pack(fill="x", pady=(0, 10))
+
+        ttk.Label(
+            results_header,
+            text="Search Results",
+            font=("Segoe UI", 13, "bold"),
+            foreground=DARK
         ).pack(side="left")
 
-        tk.Button(
-            search_frame,
-            text="Clear",
-            command=self.clear_search,
-            bg="#DDE7E3",
-            fg="#173C3A",
-            relief="flat",
-            padx=15,
-            pady=9,
-            cursor="hand2"
-        ).pack(side="left", padx=(8, 0))
-
-    #Creates the tableee
-    def create_results_table(self):
-        table_frame = tk.Frame(self, bg="white")
-        table_frame.pack(
-            fill="both",
-            expand=True,
-            padx=30,
-            pady=15
+        self.count_label = ttk.Label(
+            results_header,
+            text="0 results",
+            foreground=MUTED
         )
+        self.count_label.pack(side="right")
 
-        columns = ("type", "name", "category", "details")
+        table_frame = tk.Frame(
+            self,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+        table_frame.pack(fill="both", expand=True)
 
-        self.results_table = ttk.Treeview(
+        columns = ("type", "title", "details")
+
+        self.tree = ttk.Treeview(
             table_frame,
             columns=columns,
-            show="headings"
+            show="headings",
+            style="Search.Treeview"
         )
 
-        self.results_table.heading("type", text="Type")
-        self.results_table.heading("name", text="Name")
-        self.results_table.heading("category", text="Category")
-        self.results_table.heading("details", text="Details")
+        self.tree.heading("type", text="TYPE")
+        self.tree.heading("title", text="TITLE")
+        self.tree.heading("details", text="DETAILS")
 
-        self.results_table.column("type", width=100)
-        self.results_table.column("name", width=180)
-        self.results_table.column("category", width=120)
-        self.results_table.column("details", width=250)
+        self.tree.column("type", width=110)
+        self.tree.column("title", width=220)
+        self.tree.column("details", width=350)
 
         scrollbar = ttk.Scrollbar(
             table_frame,
             orient="vertical",
-            command=self.results_table.yview
+            command=self.tree.yview
         )
 
-        self.results_table.configure(
-            yscrollcommand=scrollbar.set
-        )
+        self.tree.configure(yscrollcommand=scrollbar.set)
 
-        self.results_table.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True, padx=8, pady=8)
+        scrollbar.pack(side="right", fill="y", pady=8)
 
-        self.status_label = tk.Label(
+        self.empty_label = ttk.Label(
             self,
-            text="Enter something to search across DeskOS.",
-            bg="#F5F4EF",
-            fg="#657572",
+            text="Enter something above to search your workspace.",
+            foreground=MUTED,
             font=("Segoe UI", 10)
         )
-        self.status_label.pack(anchor="w", padx=30, pady=(0, 15))
+        self.empty_label.pack(pady=12)
 
-    #Run the global search and display result
-    def run_search(self, event=None):
-        query = self.search_entry.get().strip()
+    def search(self):
+        query = self.query_var.get().strip()
 
         if not query:
-            self.status_label.config(text="Please enter something to search.")
+            messagebox.showwarning(
+                "Empty search",
+                "Enter something to search for."
+            )
             return
 
-        for item in self.results_table.get_children():
-            self.results_table.delete(item)
+        try:
+            self.results = backend.global_search(query)
+            self.display_results()
 
-        results = global_search(query)
+        except Exception as error:
+            messagebox.showerror("Search error", str(error))
 
-        for result_type, row in results:
+    def display_results(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        selected_filter = self.filter_var.get()
+
+        names = {
+            "task": "Tasks",
+            "habit": "Habits",
+            "finance": "Finance",
+            "note": "Notes",
+            "journal": "Journal"
+        }
+
+        count = 0
+
+        for result_type, row in self.results:
+            display_type = names.get(result_type, result_type.title())
+
+            if selected_filter != "All" and display_type != selected_filter:
+                continue
+
+            title = ""
+            details = ""
 
             if result_type == "task":
-                name = row[1]
-                category = row[5]
-                details = f"Priority: {row[3]} | Due: {row[4]}"
+                title = row[1]
+                details = f"{row[5]} • {row[3]} priority"
 
             elif result_type == "habit":
-                name = row[1]
-                category = row[3]
-                details = "Active" if row[5] else "Inactive"
+                title = row[1]
+                details = f"Category: {row[3]}"
 
             elif result_type == "finance":
-                name = row[2]
-                category = row[4]
-                details = f"{row[3].title()} | ₹{row[1]:,.2f} | {row[5]}"
+                title = row[2]
+                details = f"{row[3]} • {row[4]}"
 
             elif result_type == "note":
-                name = row[1]
-                category = row[3]
-                details = f"Created: {row[4]}"
+                title = row[1]
+                details = f"Category: {row[3]}"
 
             elif result_type == "journal":
-                name = row[1]
-                category = "Journal"
+                title = row[1]
                 details = f"Date: {row[3]}"
 
-            self.results_table.insert(
+            self.tree.insert(
                 "",
                 "end",
-                values=(
-                    result_type.title(),
-                    name,
-                    category,
-                    details
-                )
+                values=(display_type, title, details)
             )
 
-        self.status_label.config(
-            text=f"Found {len(results)} result(s) for '{query}'."
+            count += 1
+
+        self.count_label.config(
+            text=f"{count} result{'s' if count != 1 else ''}"
         )
 
-    #Clear the search
-    def clear_search(self):
-        self.search_entry.delete(0, tk.END)
-
-        for item in self.results_table.get_children():
-            self.results_table.delete(item)
-
-        self.status_label.config(
-            text="Enter something to search across DeskOS."
-        )
+        if count == 0:
+            self.empty_label.config(text="No matching results found.")
+        else:
+            self.empty_label.config(text="")

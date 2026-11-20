@@ -1,767 +1,450 @@
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date
-
-from features import tasks as task_backend
-
+from features import tasks as backend
 
 
-#DeskOs Colours
-BG = "#F5F4EF"
-TEAL = "#075753"
-TEAL_LIGHT = "#167E75"
-TEXT = "#173C3A"
-MUTED = "#71807A"
+BG = "#F4F6F3"
 WHITE = "#FFFFFF"
+TEAL = "#268477"
+DARK = "#123B38"
+TEXT = "#243532"
+MUTED = "#7B8985"
+BORDER = "#E3EAE6"
 
 
-#Tasks Screen
 class TasksScreen(ttk.Frame):
-
+    #initializez the application
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent, padding=24)
 
-        self.parent = parent
-
-        self.search_var = tk.StringVar()
-        self.filter_var = tk.StringVar(value="All")
+        self.selected_id = None
+        self.tasks = []
 
         self.setup_styles()
-
-        self.build_header()
-        self.build_toolbar()
-        self.build_task_table()
-        self.build_bottom_bar()
-
+        self.build_ui()
         self.refresh_tasks()
 
-    #Styles
+    #setups the style
     def setup_styles(self):
-
         style = ttk.Style()
-
-        style.configure(
-            "Tasks.TFrame",
-            background=BG
-        )
-
-        style.configure(
-            "Tasks.TLabel",
-            background=BG,
-            foreground=TEXT,
-            font=("Segoe UI", 10)
-        )
-
-        style.configure(
-            "TasksTitle.TLabel",
-            background=BG,
-            foreground=TEXT,
-            font=("Segoe UI", 24, "bold")
-        )
-
         style.configure(
             "Tasks.Treeview",
-            font=("Segoe UI", 10),
-            rowheight=36,
             background=WHITE,
-            fieldbackground=WHITE
+            foreground=TEXT,
+            fieldbackground=WHITE,
+            rowheight=38,
+            font=("Segoe UI", 10),
+            borderwidth=0
         )
-
         style.configure(
             "Tasks.Treeview.Heading",
-            font=("Segoe UI", 10, "bold")
+            background="#EDF2EF",
+            foreground=DARK,
+            font=("Segoe UI", 9, "bold"),
+            relief="flat"
+        )
+        style.map(
+            "Tasks.Treeview",
+            background=[("selected", "#DCEDE8")],
+            foreground=[("selected", DARK)]
         )
 
-    #Header
-    def build_header(self):
+    #builds the ui
+    def build_ui(self):
+        header = ttk.Frame(self)
+        header.pack(fill="x", pady=(0, 20))
 
-        header = ttk.Frame(
-            self,
-            style="Tasks.TFrame",
-            padding=(25, 25, 25, 12)
-        )
-
-        header.pack(fill="x")
-
-        title = ttk.Label(
+        ttk.Label(
             header,
             text="Tasks",
-            style="TasksTitle.TLabel"
-        )
+            font=("Segoe UI", 23, "bold"),
+            foreground=DARK
+        ).pack(side="left")
 
-        title.pack(anchor="w")
-
-        subtitle = ttk.Label(
+        ttk.Label(
             header,
-            text="Manage your tasks and stay productive.",
-            style="Tasks.TLabel"
+            text="Plan your work and get things done.",
+            foreground=MUTED,
+            font=("Segoe UI", 10)
+        ).pack(side="left", padx=16, pady=(9, 0))
+
+        tk.Button(
+            header,
+            text="+ New Task",
+            command=self.new_task,
+            bg=TEAL,
+            fg="white",
+            activebackground=DARK,
+            activeforeground="white",
+            relief="flat",
+            font=("Segoe UI", 10, "bold"),
+            padx=18,
+            pady=9,
+            cursor="hand2"
+        ).pack(side="right")
+
+        # Summary cards
+        summary = tk.Frame(self, bg=BG)
+        summary.pack(fill="x", pady=(0, 18))
+
+        self.pending_label = self.create_stat(summary, "Pending", "0")
+        self.completed_label = self.create_stat(summary, "Completed", "0")
+        self.total_label = self.create_stat(summary, "Total tasks", "0")
+
+        # Main layout
+        body = ttk.Frame(self)
+        body.pack(fill="both", expand=True)
+
+        left = tk.Frame(
+            body,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+        left.pack(side="left", fill="both", expand=True, padx=(0, 12))
+
+        ttk.Label(
+            left,
+            text="Task List",
+            font=("Segoe UI", 13, "bold"),
+            foreground=DARK,
+            background=WHITE
+        ).pack(anchor="w", padx=16, pady=(16, 12))
+
+        filters = tk.Frame(left, bg=WHITE)
+        filters.pack(fill="x", padx=16, pady=(0, 12))
+
+        self.search_var = tk.StringVar()
+        ttk.Entry(
+            filters,
+            textvariable=self.search_var
+        ).pack(side="left", fill="x", expand=True)
+
+        self.search_var.trace_add(
+            "write",
+            lambda *_: self.refresh_tasks()
         )
 
-        subtitle.pack(anchor="w", pady=(4, 0))
+        self.filter_var = tk.StringVar(value="All")
 
-    #Toolbar
-    def build_toolbar(self):
-
-        toolbar = ttk.Frame(
-            self,
-            style="Tasks.TFrame",
-            padding=(25, 10)
-        )
-
-        toolbar.pack(fill="x")
-
-        #Search bar
-        self.search_entry = ttk.Entry(
-            toolbar,
-            textvariable=self.search_var,
-            width=25
-        )
-
-        self.search_entry.pack(
-            side="left",
-            fill="x",
-            expand=True
-        )
-
-        self.search_entry.bind(
-            "<KeyRelease>",
-            lambda event: self.refresh_tasks()
-        )
-
-        #Task filters
-        filters = ttk.Combobox(
-            toolbar,
+        self.filter_box = ttk.Combobox(
+            filters,
             textvariable=self.filter_var,
-            values=[
-                "All",
-                "Today",
-                "Upcoming",
-                "Completed"
-            ],
+            values=["All", "Pending", "Completed"],
             state="readonly",
             width=12
         )
-
-        filters.pack(side="left", padx=8)
-
-        filters.bind(
+        self.filter_box.pack(side="right", padx=(8, 0))
+        self.filter_box.bind(
             "<<ComboboxSelected>>",
             lambda event: self.refresh_tasks()
         )
 
-        #Add task button
-        add_button = tk.Button(
-            toolbar,
-            text="+ Add Task",
-            command=self.open_task_form,
-            bg=TEAL,
-            fg=WHITE,
-            activebackground=TEAL_LIGHT,
-            activeforeground=WHITE,
-            relief="flat",
-            bd=0,
-            font=("Segoe UI", 10, "bold"),
-            padx=14,
-            pady=8,
-            cursor="hand2"
-        )
+        columns = ("task", "priority", "due", "status")
 
-        add_button.pack(side="right")
-
-    #Task Table
-    def build_task_table(self):
-
-        table_frame = ttk.Frame(
-            self,
-            style="Tasks.TFrame",
-            padding=(25, 5, 25, 10)
-        )
-
-        table_frame.pack(
-            fill="both",
-            expand=True
-        )
-
-        columns = (
-            "id",
-            "task",
-            "priority",
-            "due_date",
-            "category",
-            "status"
-        )
-
-        self.table = ttk.Treeview(
-            table_frame,
+        self.tree = ttk.Treeview(
+            left,
             columns=columns,
             show="headings",
-            style="Tasks.Treeview",
-            selectmode="browse"
+            style="Tasks.Treeview"
         )
 
-        self.table.heading("id", text="ID")
-        self.table.heading("task", text="Task")
-        self.table.heading("priority", text="Priority")
-        self.table.heading("due_date", text="Due Date")
-        self.table.heading("category", text="Category")
-        self.table.heading("status", text="Status")
+        for column, heading in [
+            ("task", "TASK"),
+            ("priority", "PRIORITY"),
+            ("due", "DUE DATE"),
+            ("status", "STATUS")
+        ]:
+            self.tree.heading(column, text=heading)
 
-        self.table.column(
-            "id",
-            width=40,
-            anchor="center"
-        )
+        self.tree.column("task", width=180)
+        self.tree.column("priority", width=85)
+        self.tree.column("due", width=100)
+        self.tree.column("status", width=85)
 
-        self.table.column(
-            "task",
-            width=220
-        )
-
-        self.table.column(
-            "priority",
-            width=85,
-            anchor="center"
-        )
-
-        self.table.column(
-            "due_date",
-            width=105,
-            anchor="center"
-        )
-
-        self.table.column(
-            "category",
-            width=100
-        )
-
-        self.table.column(
-            "status",
-            width=100,
-            anchor="center"
-        )
-
-        scrollbar = ttk.Scrollbar(
-            table_frame,
-            orient="vertical",
-            command=self.table.yview
-        )
-
-        self.table.configure(
-            yscrollcommand=scrollbar.set
-        )
-
-        self.table.pack(
-            side="left",
+        self.tree.pack(
             fill="both",
-            expand=True
+            expand=True,
+            padx=12,
+            pady=(0, 12)
         )
+        self.tree.bind("<<TreeviewSelect>>", self.select_task)
 
-        scrollbar.pack(
-            side="right",
-            fill="y"
+        # Editor
+        right = tk.Frame(
+            body,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
         )
+        right.pack(side="right", fill="both", expand=True)
 
-        self.table.bind(
-            "<Double-1>",
-            lambda event: self.edit_selected_task()
-        )
+        ttk.Label(
+            right,
+            text="Task Details",
+            font=("Segoe UI", 13, "bold"),
+            foreground=DARK,
+            background=WHITE
+        ).pack(anchor="w", padx=20, pady=(18, 16))
 
-    #Bottom Buttons
-    def build_bottom_bar(self):
+        self.name_var = tk.StringVar()
+        self.description_var = tk.StringVar()
+        self.priority_var = tk.StringVar(value="Medium")
+        self.due_var = tk.StringVar()
+        self.category_var = tk.StringVar()
 
-        bottom = ttk.Frame(
-            self,
-            style="Tasks.TFrame",
-            padding=(25, 10, 25, 20)
-        )
+        self.add_field(right, "TASK NAME", self.name_var)
+        self.add_field(right, "DESCRIPTION", self.description_var)
+        self.add_field(right, "CATEGORY", self.category_var)
 
-        bottom.pack(fill="x")
+        ttk.Label(
+            right,
+            text="PRIORITY",
+            background=WHITE,
+            foreground=MUTED,
+            font=("Segoe UI", 8, "bold")
+        ).pack(anchor="w", padx=20, pady=(8, 4))
 
-        ttk.Button(
-            bottom,
-            text="Mark Complete",
-            command=self.complete_selected_task
-        ).pack(side="left", padx=(0, 8))
+        ttk.Combobox(
+            right,
+            textvariable=self.priority_var,
+            values=["Low", "Medium", "High"],
+            state="readonly"
+        ).pack(fill="x", padx=20, pady=(0, 12))
 
-        ttk.Button(
-            bottom,
-            text="Mark Pending",
-            command=self.uncomplete_selected_task
-        ).pack(side="left", padx=8)
+        self.add_field(right, "DUE DATE (YYYY-MM-DD)", self.due_var)
 
-        ttk.Button(
-            bottom,
-            text="Edit",
-            command=self.edit_selected_task
-        ).pack(side="left", padx=8)
+        self.completed_var = tk.BooleanVar(value=False)
 
-        ttk.Button(
-            bottom,
+        tk.Checkbutton(
+            right,
+            text="Mark as completed",
+            variable=self.completed_var,
+            bg=WHITE,
+            fg=TEXT,
+            activebackground=WHITE,
+            font=("Segoe UI", 9)
+        ).pack(anchor="w", padx=20, pady=10)
+
+        actions = tk.Frame(right, bg=WHITE)
+        actions.pack(fill="x", padx=20, pady=(12, 18))
+
+        tk.Button(
+            actions,
+            text="Save Task",
+            command=self.save_task,
+            bg=TEAL,
+            fg="white",
+            activebackground=DARK,
+            activeforeground="white",
+            relief="flat",
+            font=("Segoe UI", 10, "bold"),
+            padx=18,
+            pady=9,
+            cursor="hand2"
+        ).pack(side="left")
+
+        tk.Button(
+            actions,
             text="Delete",
-            command=self.delete_selected_task
-        ).pack(side="left", padx=8)
+            command=self.delete_task,
+            bg="#FCEBE9",
+            fg="#B64D45",
+            relief="flat",
+            padx=14,
+            pady=9,
+            cursor="hand2"
+        ).pack(side="right")
 
-        self.count_label = ttk.Label(
-            bottom,
-            text="0 tasks",
-            style="Tasks.TLabel"
+    #Creates a stat ig
+    def create_stat(self, parent, title, value):
+        card = tk.Frame(
+            parent,
+            bg=WHITE,
+            highlightbackground=BORDER,
+            highlightthickness=1
         )
+        card.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
-        self.count_label.pack(side="right")
+        tk.Label(
+            card,
+            text=title,
+            bg=WHITE,
+            fg=MUTED,
+            font=("Segoe UI", 9)
+        ).pack(anchor="w", padx=14, pady=(10, 0))
 
-    
-    #Refresh Tasks
+        label = tk.Label(
+            card,
+            text=value,
+            bg=WHITE,
+            fg=DARK,
+            font=("Segoe UI", 19, "bold")
+        )
+        label.pack(anchor="w", padx=14, pady=(0, 10))
+
+        return label
+
+    #adds a field
+    def add_field(self, parent, label, variable):
+        ttk.Label(
+            parent,
+            text=label,
+            background=WHITE,
+            foreground=MUTED,
+            font=("Segoe UI", 8, "bold")
+        ).pack(anchor="w", padx=20, pady=(6, 4))
+
+        ttk.Entry(
+            parent,
+            textvariable=variable
+        ).pack(fill="x", padx=20, pady=(0, 8))
+
+    #Refreshes the tasks
     def refresh_tasks(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
-        for item in self.table.get_children():
-            self.table.delete(item)
+        self.tasks = backend.get_tasks()
 
-        try:
-            tasks = task_backend.get_tasks()
+        completed = sum(1 for task in self.tasks if task[6])
+        total = len(self.tasks)
 
-        except Exception as error:
+        self.pending_label.config(text=str(total - completed))
+        self.completed_label.config(text=str(completed))
+        self.total_label.config(text=str(total))
 
-            messagebox.showerror(
-                "Database Error",
-                f"Could not load tasks:\n{error}"
-            )
-
-            return
-
-        search_text = self.search_var.get().strip().lower()
+        query = self.search_var.get().lower().strip()
         selected_filter = self.filter_var.get()
 
-        today = date.today().isoformat()
+        for task in self.tasks:
+            task_id, name, description, priority, due, category, done = task
 
-        visible_count = 0
-
-        for task in tasks:
-
-            (
-                task_id,
-                name,
-                description,
-                priority,
-                due_date,
-                category,
-                completed
-            ) = task
-
-            #Search filter
-            searchable_text = (
-                f"{name or ''} "
-                f"{description or ''} "
-                f"{category or ''} "
-                f"{priority or ''}"
-            ).lower()
-
-            if search_text and search_text not in searchable_text:
+            if query and query not in (
+                str(name) + " " + str(description) + " " + str(category)
+            ).lower():
                 continue
 
-            #Completed filter
-            if selected_filter == "Completed" and not completed:
+            if selected_filter == "Pending" and done:
                 continue
 
-            #Today's tasks filter
-            if selected_filter == "Today":
+            if selected_filter == "Completed" and not done:
+                continue
 
-                if due_date != today or completed:
-                    continue
-
-            #Upcoming tasks filter
-            if selected_filter == "Upcoming":
-
-                if not due_date or due_date <= today or completed:
-                    continue
-
-            #Task status
-            status = "Completed" if completed else "Pending"
-
-            displayed_date = due_date if due_date else "Not Set"
-
-            #Insert task into table
-            self.table.insert(
+            self.tree.insert(
                 "",
                 "end",
                 iid=str(task_id),
                 values=(
-                    task_id,
                     name,
                     priority,
-                    displayed_date,
-                    category,
-                    status
+                    due or "—",
+                    "Completed" if done else "Pending"
                 )
             )
 
-            visible_count += 1
+    #opens up a form for new task
+    def new_task(self):
+        self.selected_id = None
 
-        self.count_label.configure(
-            text=f"{visible_count} tasks"
-        )
+        self.name_var.set("")
+        self.description_var.set("")
+        self.category_var.set("")
+        self.priority_var.set("Medium")
+        self.due_var.set("")
+        self.completed_var.set(False)
 
-    # Add / Edit Task Form
-    def open_task_form(self, task=None):
+        for item in self.tree.selection():
+            self.tree.selection_remove(item)
 
-        editing = task is not None
+    #selectes a task so we can perform crud
+    def select_task(self, event=None):
+        selection = self.tree.selection()
+        if not selection:
+            return
 
-        window = tk.Toplevel(self)
+        task_id = int(selection[0])
 
-        window.title(
-            "Edit Task" if editing else "Add Task"
-        )
+        for task in self.tasks:
+            if task[0] == task_id:
+                self.selected_id = task_id
+                self.name_var.set(task[1] or "")
+                self.description_var.set(task[2] or "")
+                self.priority_var.set(task[3] or "Medium")
+                self.due_var.set(task[4] or "")
+                self.category_var.set(task[5] or "")
+                self.completed_var.set(bool(task[6]))
+                break
 
-        window.geometry("420x460")
-        window.resizable(False, False)
-        window.configure(bg=BG)
+    #Saves a task
+    def save_task(self):
+        name = self.name_var.get().strip()
+        description = self.description_var.get().strip()
+        priority = self.priority_var.get()
+        due = self.due_var.get().strip()
+        category = self.category_var.get().strip()
+        completed = int(self.completed_var.get())
 
-        window.transient(self.winfo_toplevel())
+        if not name:
+            messagebox.showwarning("Missing name", "Enter a task name.")
+            return
 
-        #Form heading
-        tk.Label(
-            window,
-            text="Edit Task" if editing else "Add New Task",
-            bg=BG,
-            fg=TEXT,
-            font=("Segoe UI", 20, "bold")
-        ).pack(
-            anchor="w",
-            padx=25,
-            pady=(22, 15)
-        )
-
-        form = tk.Frame(
-            window,
-            bg=BG
-        )
-
-        form.pack(
-            fill="both",
-            expand=True,
-            padx=25
-        )
-
-        #Reusable form field creator
-        def add_field(label_text, default=""):
-
-            tk.Label(
-                form,
-                text=label_text,
-                bg=BG,
-                fg=TEXT,
-                font=("Segoe UI", 10)
-            ).pack(
-                anchor="w",
-                pady=(7, 3)
-            )
-
-            entry = ttk.Entry(form)
-
-            entry.pack(fill="x")
-
-            entry.insert(0, default)
-
-            return entry
-
-        #Task name
-        name_entry = add_field(
-            "Task name *",
-            task[1] if editing else ""
-        )
-
-        #Description
-        description_entry = add_field(
-            "Description",
-            task[2] or "" if editing else ""
-        )
-
-        #Priority
-        tk.Label(
-            form,
-            text="Priority",
-            bg=BG,
-            fg=TEXT
-        ).pack(
-            anchor="w",
-            pady=(7, 3)
-        )
-
-        priority_var = tk.StringVar(
-            value=task[3] if editing else "Medium"
-        )
-
-        ttk.Combobox(
-            form,
-            textvariable=priority_var,
-            values=["Low", "Medium", "High"],
-            state="readonly"
-        ).pack(fill="x")
-
-        #Due date
-        due_entry = add_field(
-            "Due date (YYYY-MM-DD, optional)",
-            task[4] or "" if editing else ""
-        )
-
-        #Category
-        category_entry = add_field(
-            "Category",
-            task[5] or "" if editing else "Personal"
-        )
-
-
-        #Save Task
-        def save_task():
-
-            name = name_entry.get().strip()
-
-            description = description_entry.get().strip()
-
-            priority = priority_var.get()
-
-            due_date = due_entry.get().strip()
-
-            category = category_entry.get().strip()
-
-            #Required field validation
-            if not name:
-
-                messagebox.showwarning(
-                    "Missing Information",
-                    "Please enter a task name.",
-                    parent=window
+        if due:
+            try:
+                date.fromisoformat(due)
+            except ValueError:
+                messagebox.showerror(
+                    "Invalid date",
+                    "Use YYYY-MM-DD format."
                 )
-
                 return
 
-            #Date validation
-            if due_date:
+        try:
+            if self.selected_id is None:
+                backend.add_task(
+                    name, description, priority, due, category, completed
+                )
+            else:
+                backend.update_task(
+                    self.selected_id,
+                    name,
+                    description,
+                    priority,
+                    due,
+                    category
+                )
 
-                try:
-
-                    parsed_date = date.fromisoformat(due_date)
-
-                    if parsed_date.isoformat() != due_date:
-                        raise ValueError
-
-                except ValueError:
-
-                    messagebox.showwarning(
-                        "Invalid Date",
-                        "Use the YYYY-MM-DD format.",
-                        parent=window
-                    )
-
-                    return
-
-            #Save to database
-            try:
-
-                if editing:
-
-                    task_backend.update_task(
-                        task[0],
-                        name,
-                        description,
-                        priority,
-                        due_date,
-                        category
-                    )
-
+                if completed:
+                    backend.complete_task(self.selected_id)
                 else:
-
-                    task_backend.add_task(
-                        name,
-                        description,
-                        priority,
-                        due_date,
-                        category
-                    )
-
-                window.destroy()
-
-                self.refresh_tasks()
-
-            except Exception as error:
-
-                messagebox.showerror(
-                    "Could Not Save",
-                    str(error),
-                    parent=window
-                )
-
-        #Save button is outside save task function
-        save_button = tk.Button(
-            window,
-            text="Save Task",
-            command=save_task,
-            bg=TEAL,
-            fg=WHITE,
-            activebackground=TEAL_LIGHT,
-            activeforeground=WHITE,
-            relief="flat",
-            padx=18,
-            pady=9,
-            cursor="hand2"
-        )
-
-        save_button.pack(
-            anchor="e",
-            padx=25,
-            pady=20
-        )
-
-        #Center form over main application
-        window.update_idletasks()
-
-        parent_window = self.winfo_toplevel()
-
-        x = parent_window.winfo_rootx()
-        y = parent_window.winfo_rooty()
-
-        parent_width = parent_window.winfo_width()
-        parent_height = parent_window.winfo_height()
-
-        window_width = 420
-        window_height = 460
-
-        position_x = x + (parent_width - window_width) // 2
-        position_y = y + (parent_height - window_height) // 2
-
-        window.geometry(
-            f"{window_width}x{window_height}+{position_x}+{position_y}"
-        )
-
-        window.grab_set()
-
-        name_entry.focus_set()
-
-    
-    # Get selected task
-    def get_selected_task(self):
-
-        selected = self.table.selection()
-
-        if not selected:
-
-            messagebox.showinfo(
-                "Select a Task",
-                "Please select a task first."
-            )
-
-            return None
-
-        task_id = int(selected[0])
-
-        try:
-
-            task = task_backend.get_task_by_id(task_id)
-
-            if task is None:
-
-                messagebox.showerror(
-                    "Task Not Found",
-                    "This task could not be found."
-                )
-
-                return None
-
-            return task
-
-        except Exception as error:
-
-            messagebox.showerror(
-                "Database Error",
-                str(error)
-            )
-
-            return None
-
-    #Edit task
-    def edit_selected_task(self):
-
-        task = self.get_selected_task()
-
-        if task is not None:
-
-            self.open_task_form(task)
-
-    #Mark task complete
-    def complete_selected_task(self):
-
-        task = self.get_selected_task()
-
-        if task is None:
-            return
-
-        if task[6]:
-
-            messagebox.showinfo(
-                "Already Completed",
-                "This task is already completed."
-            )
-
-            return
-
-        try:
-
-            task_backend.complete_task(task[0])
+                    backend.uncomplete_task(self.selected_id)
 
             self.refresh_tasks()
+            self.new_task()
 
         except Exception as error:
+            messagebox.showerror("Error", str(error))
 
-            messagebox.showerror(
-                "Could Not Complete Task",
-                str(error)
+    #Deletes a task
+    def delete_task(self):
+        if self.selected_id is None:
+            messagebox.showwarning(
+                "No task selected",
+                "Select a task first."
             )
+            return
 
-    #Mark task pending
-    def uncomplete_selected_task(self):
-
-        task = self.get_selected_task()
-
-        if task is None:
+        if not messagebox.askyesno(
+            "Delete task",
+            "Are you sure you want to delete this task?"
+        ):
             return
 
         try:
-
-            task_backend.uncomplete_task(task[0])
-
+            backend.delete_task(self.selected_id)
+            self.new_task()
             self.refresh_tasks()
-
         except Exception as error:
-
-            messagebox.showerror(
-                "Could Not Update Task",
-                str(error)
-            )
-
-    #Delete task
-    def delete_selected_task(self):
-
-        task = self.get_selected_task()
-
-        if task is None:
-            return
-
-        confirm = messagebox.askyesno(
-            "Delete Task",
-            f"Delete '{task[1]}'?\nThis cannot be undone."
-        )
-
-        if not confirm:
-            return
-
-        try:
-
-            task_backend.delete_task(task[0])
-
-            self.refresh_tasks()
-
-        except Exception as error:
-
-            messagebox.showerror(
-                "Could Not Delete Task",
-                str(error)
-            )
+            messagebox.showerror("Error", str(error))
